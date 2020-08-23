@@ -1,0 +1,4 @@
+#!/bin/sh
+
+emacsclient $1 >/dev/null &>/dev/null &
+screen -X select 0

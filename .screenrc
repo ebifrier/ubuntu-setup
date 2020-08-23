@@ -1,0 +1,45 @@
+#
+#
+#
+
+# Read from ~/.screenrc
+# source ~/Dropbox/settings/linux/screen/.screenrc
+
+escape ^Oo
+termcap kterm hs@
+terminfo kterm hs@
+vbell off
+
+defhstatus "screen ^En:^Et"
+defscrollback 30000
+#defencoding utf-8
+
+shell -$SHELL
+startup_message off
+autodetach on
+
+caption always "%{= kw} %-w%{=bu kc}%n %t%{-}%+w %= %{= kw}%y/%m/%d %{=b kw}%c"
+
+bind w windowlist -b
+bind 2 split
+bind o focus
+bind 1 only
+bind 0 remove
+bind e select 0 # select emacs
+
+bind t
+bind ^t command -c prefix
+#bind -c prefix ^a command
+bind -c prefix 0 select 0
+bind -c prefix 1 select 1
+bind -c prefix 2 select 2
+bind -c prefix 3 select 3
+bind -c prefix 4 select 4
+bind -c prefix 5 select 5
+bind -c prefix 6 select 6
+bind -c prefix 7 select 7
+bind -c prefix 8 select 8
+bind -c prefix 9 select 9
+
+screen -t emacs 0 emacs --no-window
+screen -t bash 1 bash
