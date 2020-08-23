@@ -97,7 +97,7 @@
 (setq backward-delete-char-untabify-method 'hungry)
 
 ;;; ホイールマウス
-(mouse-wheel-mode t)
+;(mouse-wheel-mode t)
 (setq mouse-wheel-follow-mouse t)
 
 ;;; 補完時に大文字小文字を区別しない
@@ -112,7 +112,7 @@
 (setq scroll-step 1)
 
 ;;; スクロールバーを右側に表示する
-(set-scroll-bar-mode 'right)
+;(set-scroll-bar-mode 'right)
 
 ;;; 最近使ったファイルを保存(M-x recentf-open-filesで開く)
 (recentf-mode)
@@ -121,8 +121,7 @@
 ;(line-number-mode t)
 (column-number-mode t)
 
-;; メニューバー、ツールバーを非表示
-(tool-bar-mode -1)
+;; メニューバーを非表示
 (menu-bar-mode -1)
 
 ;; 色つけを常に行う

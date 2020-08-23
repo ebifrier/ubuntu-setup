@@ -1,26 +1,11 @@
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;; Anything
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-(require 'anything-config)
- (setq anything-sources
-       (list anything-c-source-buffers
-             anything-c-source-bookmarks
-             anything-c-source-file-name-history
-             anything-c-source-info-pages
-;;             anything-c-source-info-elisp
-             anything-c-source-man-pages
-             anything-c-source-locate
-             anything-c-source-emacs-commands
-             anything-c-source-calculation-result))
-
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; GDB
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;;; —L—p‚Èƒoƒbƒtƒ@‚ğŠJ‚­ƒ‚[ƒh
+;;; ï¿½Lï¿½pï¿½Èƒoï¿½bï¿½tï¿½@ï¿½ï¿½ï¿½Jï¿½ï¿½ï¿½ï¿½ï¿½[ï¿½h
 (setq gdb-many-windows t)
 
-;;; •Ï”‚Ìã‚Éƒ}ƒEƒXƒJ[ƒ\ƒ‹‚ğ’u‚­‚Æ’l‚ğ•\¦
+;;; ï¿½Ïï¿½ï¿½Ìï¿½Éƒ}ï¿½Eï¿½Xï¿½Jï¿½[ï¿½\ï¿½ï¿½ï¿½ï¿½uï¿½ï¿½ï¿½Æ’lï¿½ï¿½\ï¿½ï¿½
 (add-hook 'gdb-mode-hook
           '(lambda ()
              (global-set-key [f5] 'gud-cont)
@@ -30,10 +15,10 @@
              (global-set-key [f9] 'gud-tbreak)
              (gud-tooltip-mode t)))
 
-;;; I/O ƒoƒbƒtƒ@‚ğ•\¦
+;;; I/O ï¿½oï¿½bï¿½tï¿½@ï¿½ï¿½\ï¿½ï¿½
 (setq gdb-use-separate-io-buffer t)
 
-;;; t ‚É‚·‚é‚Æ mini buffer ‚É’l‚ª•\¦‚³‚ê‚é
+;;; t ï¿½É‚ï¿½ï¿½ï¿½ï¿½ mini buffer ï¿½É’lï¿½ï¿½ï¿½\ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
 (setq gud-tooltip-echo-area nil)
 
 
@@ -87,7 +72,7 @@
          (define-key gtags-mode-map "\C-cf" 'gtags-find-file)
          ))
 
-;; ƒoƒbƒtƒ@ˆÚ“®Œã‚Å‚àƒ|ƒbƒv‚ªg‚¦‚æ‚¤‚ÉB
+;; ï¿½oï¿½bï¿½tï¿½@ï¿½Ú“ï¿½ï¿½ï¿½Å‚ï¿½ï¿½|ï¿½bï¿½vï¿½ï¿½ï¿½gï¿½ï¿½ï¿½æ‚¤ï¿½ÉB
 (global-set-key "\C-c/" 'gtags-pop-stack)
 
 
