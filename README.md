@@ -157,6 +157,11 @@ export PATH="$HOME/.local/share/mise/shims:$PATH"
 
 `uid` を省略すると `useradd` の自動割り当てに任せる (グループはユーザー名と同じものを作る)。
 
+あわせて以下も設定する。
+
+- `/root/.ssh/authorized_keys` を `~<user>/.ssh/` にコピー (無ければ飛ばす)
+- `/etc/sudoers.d/<user>` を置いてパスワード無しの `sudo` を許可
+
 他の環境に単体で持っていけるよう、`lib/common.sh` には依存させていない。
 
 ## ディレクトリ構成

@@ -1,6 +1,7 @@
 #!/bin/sh
 #
-# ユーザーを作る。docker / sudo グループにも入れる。
+# ユーザーを作る。docker / sudo グループに入れ、root の authorized_keys と
+# パスワード無しの sudo も設定する。
 #
 #   ./adduser.sh <user> [uid]
 #
@@ -33,5 +34,19 @@ else
     echo "docker グループが無いので飛ばした (./setup.sh docker で入る)。"
 fi
 sudo usermod -aG sudo "$NEW_USER"
+
+# root の authorized_keys をそのまま引き継ぐ (無ければ飛ばす)。
+NEW_HOME=$(getent passwd "$NEW_USER" | cut -d: -f6)
+if sudo test -f /root/.ssh/authorized_keys; then
+    sudo install -d -m 700 -o "$NEW_USER" -g "$NEW_USER" "$NEW_HOME/.ssh"
+    sudo install -m 600 -o "$NEW_USER" -g "$NEW_USER" \
+        /root/.ssh/authorized_keys "$NEW_HOME/.ssh/authorized_keys"
+else
+    echo "/root/.ssh/authorized_keys が無いので ssh 鍵の設定は飛ばした。"
+fi
+
+# パスワード無しで sudo できるようにする。
+echo "$NEW_USER ALL=(ALL) NOPASSWD:ALL" | sudo tee "/etc/sudoers.d/$NEW_USER" >/dev/null
+sudo chmod 440 "/etc/sudoers.d/$NEW_USER"
 
 echo "$NEW_USER (uid=$(id -u "$NEW_USER")) を作った。"
