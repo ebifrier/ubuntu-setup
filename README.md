@@ -4,7 +4,7 @@ The setup file for ubuntu.
 ## 使い方
 
 ```sh
-./setup.sh                # 全部 (locale -> packages -> dotfiles -> docker -> nvidia -> mise -> claude -> claude-config)
+./setup.sh                # 全部 (locale -> packages -> dotfiles -> git -> docker -> nvidia -> mise -> claude -> rtk -> claude-config)
 ./setup.sh docker         # 特定のステップだけ
 ./setup.sh docker mise    # 複数指定も可 (指定した順に実行)
 ./setup.sh -h             # ステップ一覧
@@ -34,7 +34,7 @@ The setup file for ubuntu.
 apt で以下を入れる。
 
 - 基本: `screen` `tmux` `emacs-nox` `git` `curl` `wget` `build-essential` `ca-certificates`
-- 開発ツール: `global` (gtags) `python3-pip` `unzip` `htop`
+- 開発ツール: `global` (gtags) `python3-pip` `unzip` `htop` `jq` (`jq` は rtk のフックが使う)
 
 ### install-dotfiles.sh
 
@@ -47,6 +47,18 @@ apt で以下を入れる。
 
 ※ `$HOME/.emacs.d` はスクリプト冒頭の `RECREATE` に入っていて毎回作り直すので、
 ローカルの変更は消える。それ以外は上書きコピーなので `$HOME` の他のファイルは残る。
+
+### install-git.sh
+
+`git config --global` で `user.name` / `user.email` を設定する。
+
+```sh
+./install-git.sh                            # ebifrier <ebifrier@gmail.com>
+./install-git.sh someone foo@example.com    # 名前とメールを指定
+```
+
+環境変数 `GIT_USER_NAME` / `GIT_USER_EMAIL` でも上書きできる。
+別人の環境に配るときはここを変える。
 
 ### install-docker.sh
 
@@ -137,10 +149,32 @@ Claude Code を公式のネイティブインストーラで入れる。
 
 初回はログインが必要なので `claude` を起動してブラウザの指示に従う。
 
+### install-rtk.sh
+
+[rtk](https://github.com/rtk-ai/rtk) (Rust Token Killer) を公式インストーラで
+`~/.local/bin/rtk` に入れる。`git status` のような bash コマンドの出力を
+圧縮して Claude Code に渡し、トークン消費を減らすプロキシ。
+
+```sh
+./install-rtk.sh          # 最新版
+./install-rtk.sh v0.28.2  # バージョン指定
+```
+
+Claude Code からは `settings.json` の `PreToolUse` フック
+(`~/.claude/hooks/rtk-rewrite.sh`) が `git status` -> `rtk git status` のように
+書き換える。フックの実体と登録は `install-claude-config.sh` が配置するので、
+rtk 単体で入れただけでは有効にならない (逆も同じで、rtk が無いときフックは
+警告を出して素通りする)。フックは `jq` に依存する (`install-packages.sh` で入る)。
+
+削減量は `rtk gain` で見られる。
+
 ### install-claude-config.sh
 
 `.claude/` 以下 (CLAUDE.md / settings.json / rules / skills / hooks / scripts) を
 `$HOME/.claude` に配置する。セッション履歴・キャッシュ・認証情報は含めていない。
+
+`settings.json` には rtk の `PreToolUse` フック (`hooks/rtk-rewrite.sh`) の登録も
+入っているので、rtk 本体は `install-rtk.sh` で入れておく。
 
 ```sh
 ./install-claude-config.sh

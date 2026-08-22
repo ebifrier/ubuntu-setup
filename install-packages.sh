@@ -11,7 +11,7 @@ SCRIPT_DIR=$(cd "$(dirname "$0")" && pwd)
 PACKAGES_BASE="screen tmux emacs-nox git curl wget build-essential ca-certificates"
 
 # 開発ツール系 (global = GNU GLOBAL / gtags)
-PACKAGES_DEV="global python3-pip unzip htop"
+PACKAGES_DEV="global python3-pip unzip htop jq"
 
 # 単語分割させたいので、ここは意図的にクォートしない。
 # shellcheck disable=SC2086

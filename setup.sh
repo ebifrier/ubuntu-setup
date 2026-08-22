@@ -18,10 +18,12 @@ STEPS='
 locale:install-locale.sh:ja_JP.UTF-8 ロケール
 packages:install-packages.sh:apt パッケージ
 dotfiles:install-dotfiles.sh:dotfiles の配置
+git:install-git.sh:git の global 設定 (user.name / user.email)
 docker:install-docker.sh:Docker Engine
 nvidia:install-nvidia.sh:NVIDIA ドライバ (GPU 付き LXC のみ)
 mise:install-mise.sh:mise + Node.js / pnpm
 claude:install-claude.sh:Claude Code
+rtk:install-rtk.sh:rtk (Claude Code のトークン削減プロキシ)
 claude-config:install-claude-config.sh:.claude 設定の配置
 '
 
