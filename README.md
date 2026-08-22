@@ -149,11 +149,13 @@ export PATH="$HOME/.local/share/mise/shims:$PATH"
 
 ### adduser.sh
 
-ユーザーを uid/gid 指定で作り、`docker` / `sudo` グループに入れる。
+ユーザーを作り、`docker` / `sudo` グループに入れる。
 
 ```sh
-./adduser.sh <user> <uid>
+./adduser.sh <user> [uid]
 ```
+
+`uid` を省略すると `useradd` の自動割り当てに任せる (グループはユーザー名と同じものを作る)。
 
 他の環境に単体で持っていけるよう、`lib/common.sh` には依存させていない。
 
