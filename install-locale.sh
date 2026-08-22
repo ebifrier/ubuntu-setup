@@ -7,18 +7,18 @@
 #
 set -e
 
-LOCALE=${1:-ja_JP.UTF-8}
+SCRIPT_DIR=$(cd "$(dirname "$0")" && pwd)
+. "$SCRIPT_DIR/lib/common.sh"
 
-export DEBIAN_FRONTEND=noninteractive
+LOCALE=${1:-ja_JP.UTF-8}
 
 # cloud image には locales が入っていないことがある。
 if ! command -v locale-gen >/dev/null 2>&1; then
-    sudo apt-get update
-    sudo apt-get install -y locales
+    apt_install locales
 fi
 
 sudo locale-gen "$LOCALE"
 sudo update-locale LANG="$LOCALE"
 
-echo
-echo "LANG=$LOCALE にした。反映は次のログインから (今のシェルなら export LANG=$LOCALE)。"
+log "LANG=$LOCALE にした。"
+note "LANG=$LOCALE の反映は次のログインから (今のシェルなら export LANG=$LOCALE)。"

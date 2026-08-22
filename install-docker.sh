@@ -8,15 +8,15 @@
 #
 set -e
 
-export DEBIAN_FRONTEND=noninteractive
+SCRIPT_DIR=$(cd "$(dirname "$0")" && pwd)
+. "$SCRIPT_DIR/lib/common.sh"
 
 # Ubuntu 同梱の docker.io / podman-docker とは競合するので外しておく。
 for pkg in docker.io docker-doc docker-compose docker-compose-v2 podman-docker containerd runc; do
     sudo apt-get remove -y "$pkg" >/dev/null 2>&1 || true
 done
 
-sudo apt-get update
-sudo apt-get install -y ca-certificates curl gnupg
+apt_install ca-certificates curl gnupg
 
 # GPG 鍵
 sudo install -m 0755 -d /etc/apt/keyrings
@@ -30,9 +30,8 @@ CODENAME=$(. /etc/os-release && echo "${UBUNTU_CODENAME:-$VERSION_CODENAME}")
 echo "deb [arch=$ARCH signed-by=/etc/apt/keyrings/docker.gpg] https://download.docker.com/linux/ubuntu $CODENAME stable" |
     sudo tee /etc/apt/sources.list.d/docker.list >/dev/null
 
-sudo apt-get update
-sudo apt-get install -y \
-    docker-ce docker-ce-cli containerd.io \
+apt_update force
+apt_install docker-ce docker-ce-cli containerd.io \
     docker-buildx-plugin docker-compose-plugin
 
 sudo systemctl enable --now docker
@@ -40,11 +39,9 @@ sudo systemctl enable --now docker
 # sudo 無しで使えるようにする (反映は次のログインから)
 if ! id -nG "$(id -un)" | tr ' ' '\n' | grep -qx docker; then
     sudo usermod -aG docker "$(id -un)"
-    echo "$(id -un) を docker グループに追加した。反映は次のログインから。"
+    log "$(id -un) を docker グループに追加した。"
+    note "docker グループの反映は次のログインから (即試すなら newgrp docker)。"
 fi
 
 sudo docker --version
 sudo docker compose version
-
-echo
-echo "sudo 無しで docker を使うには再ログインする (即試すなら newgrp docker)。"

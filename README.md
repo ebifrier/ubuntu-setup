@@ -5,14 +5,17 @@ The setup file for ubuntu.
 
 ```sh
 ./setup.sh                # 全部 (locale -> packages -> dotfiles -> docker -> mise -> claude -> claude-config)
-./setup.sh locale         # ja_JP.UTF-8 ロケールだけ
-./setup.sh packages       # apt パッケージだけ
-./setup.sh dotfiles       # dotfiles の配置だけ
-./setup.sh docker         # Docker だけ
-./setup.sh mise           # mise + Node.js / pnpm だけ
-./setup.sh claude         # Claude Code だけ
-./setup.sh claude-config  # .claude 設定の配置だけ
+./setup.sh docker         # 特定のステップだけ
+./setup.sh docker mise    # 複数指定も可 (指定した順に実行)
+./setup.sh -h             # ステップ一覧
 ```
+
+ステップの定義は `setup.sh` 冒頭の `STEPS` 1箇所にまとまっている
+(名前 / スクリプト / 説明)。ステップを足すときはここに1行足して
+`install-<名前>.sh` を置く。`all` の実行順もこの並び。
+
+「次のログインから有効」のような注意書きは各スクリプトが `note` で登録し、
+`setup.sh` の最後に「セットアップ後のメモ」としてまとめて出る。
 
 ### install-locale.sh
 
@@ -33,7 +36,7 @@ apt で以下を入れる。
 - 基本: `screen` `tmux` `emacs-nox` `git` `curl` `wget` `build-essential` `ca-certificates`
 - 開発ツール: `global` (gtags) `python3-pip` `unzip` `htop`
 
-### dotfiles
+### install-dotfiles.sh
 
 `.emacs` / `.emacs.d` / `.screenrc` / `.tmux.conf` を `$HOME` に配置し、
 `bin/ec` を `/usr/local/bin` に入れる。
@@ -112,6 +115,18 @@ context7 の API キーが要るときは `settings.json` の `env` に足す
 
 各スクリプトから読み込む共通処理。単体では実行しない。
 
+```sh
+SCRIPT_DIR=$(cd "$(dirname "$0")" && pwd)
+. "$SCRIPT_DIR/lib/common.sh"
+```
+
+- `log` / `warn` / `die` — メッセージ出力。`die` は終了コード 1 で止まる
+- `note <文言>` — 「次のログインから有効」のような後で読ませたい注意書きを溜める。
+  `setup.sh` の最後 (単体実行ならそのスクリプトの最後) にまとめて出る。同じ文言は1回だけ
+- `require_cmd <コマンド>...` — 無ければ `install-packages.sh` を案内して止まる
+- `apt_install <パッケージ>...` — `apt-get update` は1プロセスにつき1回だけ走る。
+  リポジトリを足した直後など、明示的に更新したいときは `apt_update force`
+
 `.bashrc` への追記は `ensure_bashrc_block <名前>` に集約してある。
 中身を標準入力で渡すと、マーカー行で囲んだブロックとして書き込む。
 
@@ -128,9 +143,13 @@ export PATH="$HOME/.local/share/mise/shims:$PATH"
 
 ### adduser.sh
 
+ユーザーを uid/gid 指定で作り、`docker` / `sudo` グループに入れる。
+
 ```sh
-./adduser.sh user id
+./adduser.sh <user> <uid>
 ```
+
+他の環境に単体で持っていけるよう、`lib/common.sh` には依存させていない。
 
 ## Proxmox で自動セットアップ (cloud-init)
 

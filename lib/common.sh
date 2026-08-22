@@ -9,6 +9,76 @@
 
 BASHRC="${BASHRC:-$HOME/.bashrc}"
 
+# ---------------------------------------------------------------- メッセージ
+
+log() {
+    echo "$@"
+}
+
+warn() {
+    echo "$@" >&2
+}
+
+die() {
+    echo "$@" >&2
+    exit 1
+}
+
+# 「次のログインから有効」のような、最後にまとめて見せたい注意書きを溜める。
+#
+#   note "docker グループの反映は次のログインから。"
+#
+# setup.sh から呼ばれたときは setup.sh の最後に、
+# 個別のスクリプトを直接叩いたときはそのスクリプトの最後にまとめて出る。
+note() {
+    if ! grep -qxF "$*" "$NOTES_FILE" 2>/dev/null; then
+        echo "$*" >> "$NOTES_FILE"
+    fi
+}
+
+print_notes() {
+    [ -s "$NOTES_FILE" ] || return 0
+    echo
+    echo "=== セットアップ後のメモ ==="
+    cat "$NOTES_FILE"
+    : > "$NOTES_FILE"
+}
+
+# 最初に common.sh を読んだプロセス (通常は setup.sh) が note の置き場を作り、
+# 終了時にまとめて出す。子プロセスは NOTES_FILE を引き継いで書き足すだけ。
+if [ -z "${NOTES_FILE:-}" ]; then
+    NOTES_FILE=$(mktemp)
+    export NOTES_FILE
+    trap 'print_notes; rm -f "$NOTES_FILE"' EXIT
+fi
+
+# ------------------------------------------------------------------ コマンド
+
+# 必要なコマンドが無ければ止める。
+require_cmd() {
+    for _cmd in "$@"; do
+        command -v "$_cmd" >/dev/null 2>&1 ||
+            die "$_cmd が無い。先に ./install-packages.sh を実行する。"
+    done
+}
+
+# apt の索引更新。1プロセスにつき1回だけ走る (force を渡すと必ず走る)。
+apt_update() {
+    if [ "${1:-}" = force ] || [ -z "${_APT_UPDATED:-}" ]; then
+        sudo apt-get update
+        _APT_UPDATED=1
+    fi
+}
+
+# apt でパッケージを入れる。索引更新と noninteractive はここで面倒を見る。
+apt_install() {
+    [ $# -gt 0 ] || return 0
+    apt_update
+    sudo DEBIAN_FRONTEND=noninteractive apt-get install -y "$@"
+}
+
+# ------------------------------------------------------------------- .bashrc
+
 # ~/.bashrc の管理ブロックを冪等に書く。中身は標準入力から渡す。
 #
 #   ensure_bashrc_block mise <<'BLOCK'
@@ -64,7 +134,7 @@ ensure_bashrc_block() {
     } >> "$BASHRC"
     rm -f "$_new"
 
-    echo "$BASHRC の $_name ブロックを$_verb。"
+    log "$BASHRC の $_name ブロックを$_verb。"
 }
 
 # 末尾の空行を落とす (ブロックを足すたびに空行が増えないように)。
@@ -98,7 +168,7 @@ remove_bashrc_block() {
     cat "$_tmp" > "$BASHRC"
     rm -f "$_tmp"
 
-    echo "$BASHRC の $_name ブロックを削除した。"
+    log "$BASHRC の $_name ブロックを削除した。"
 }
 
 # 旧形式 (`# ubuntu-setup: <name>` から次の空行まで) のブロックを消す。
@@ -120,7 +190,7 @@ remove_legacy_bashrc_block() {
     cat "$_tmp" > "$BASHRC"
     rm -f "$_tmp"
 
-    echo "$BASHRC の旧 $_name ブロックを削除した。"
+    log "$BASHRC の旧 $_name ブロックを削除した。"
 }
 
 # ~/.local/bin を PATH に通す。claude / mise の両方が使う。

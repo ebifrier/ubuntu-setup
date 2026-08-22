@@ -6,6 +6,8 @@
 set -e
 
 SCRIPT_DIR=$(cd "$(dirname "$0")" && pwd)
+. "$SCRIPT_DIR/lib/common.sh"
+
 SRC="$SCRIPT_DIR/.claude"
 DEST="$HOME/.claude"
 
@@ -21,4 +23,4 @@ chmod +x "$DEST/scripts/"*.sh "$DEST/hooks/"*.sh
 
 # プラグイン (joseki など) と MCP サーバーは settings.json の
 # enabledPlugins / extraKnownMarketplaces を見て claude 起動時に自動で入る。
-echo "$DEST に設定を配置した。claude を起動するとプラグインが取得される。"
+log "$DEST に設定を配置した。claude を起動するとプラグインが取得される。"

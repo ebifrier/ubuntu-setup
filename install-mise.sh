@@ -15,10 +15,7 @@ MODE=${1:-all}
 MISE_BIN="$HOME/.local/bin/mise"
 MISE_CONFIG_DIR="$HOME/.config/mise"
 
-if ! command -v curl >/dev/null 2>&1; then
-    echo "curl が無い。先に ./install-packages.sh を実行する。" >&2
-    exit 1
-fi
+require_cmd curl
 
 curl -fsSL https://mise.run | MISE_INSTALL_PATH="$MISE_BIN" sh
 
@@ -41,15 +38,13 @@ cp -f "$SCRIPT_DIR/config/mise.toml" "$MISE_CONFIG_DIR/config.toml"
 "$MISE_BIN" --version
 
 if [ "$MODE" = "none" ]; then
-    echo "ツールは入れない。'mise install' で後から入れられる。"
+    log "ツールは入れない。'mise install' で後から入れられる。"
 else
     "$MISE_BIN" install
     "$MISE_BIN" ls
 fi
 
-echo
-echo "新しいシェルを開くと mise / node / pnpm が使える。"
+note "新しいシェルを開くと mise / node / pnpm が使える。"
 if [ -d "$HOME/.nvm" ]; then
-    echo "※ ~/.nvm が残っている。mise に移ったので 'rm -rf ~/.nvm' と"
-    echo "  ~/.bashrc の NVM_DIR の行 (nvm 公式インストーラが書いたもの) を消してよい。"
+    note "~/.nvm が残っている。mise に移ったので rm -rf ~/.nvm と、~/.bashrc の NVM_DIR の行 (nvm 公式インストーラが書いたもの) を消してよい。"
 fi

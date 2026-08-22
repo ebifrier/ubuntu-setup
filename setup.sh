@@ -2,65 +2,74 @@
 #
 # ubuntu 環境のセットアップ。
 #
-#   ./setup.sh                # 全部 (locale -> packages -> dotfiles -> docker -> mise -> claude -> claude-config)
-#   ./setup.sh locale         # ja_JP.UTF-8 ロケールだけ
-#   ./setup.sh dotfiles       # dotfiles の配置だけ
-#   ./setup.sh packages       # apt パッケージだけ
-#   ./setup.sh docker         # Docker だけ
-#   ./setup.sh mise           # mise + Node.js / pnpm だけ
-#   ./setup.sh claude         # Claude Code だけ
-#   ./setup.sh claude-config  # .claude 設定の配置だけ
+#   ./setup.sh                # 全部 (STEPS の順に実行)
+#   ./setup.sh docker         # 特定のステップだけ
+#   ./setup.sh docker mise    # 複数指定も可 (指定した順に実行)
+#   ./setup.sh -h             # ステップ一覧
 #
 set -e
 
 SCRIPT_DIR=$(cd "$(dirname "$0")" && pwd)
+. "$SCRIPT_DIR/lib/common.sh"
 
-install_dotfiles() {
-    if [ -d "$HOME/.emacs.d" ]; then
-        rm -rf "$HOME/.emacs.d"
-    fi
-    cp -rf "$SCRIPT_DIR/.emacs.d" "$HOME/"
-    cp -f "$SCRIPT_DIR/.emacs" "$HOME/"
-    cp -f "$SCRIPT_DIR/.screenrc" "$HOME/"
-    cp -f "$SCRIPT_DIR/.tmux.conf" "$HOME/"
+# ステップの定義。all の実行順もこの並び。
+# 名前:スクリプト:説明
+STEPS='
+locale:install-locale.sh:ja_JP.UTF-8 ロケール
+packages:install-packages.sh:apt パッケージ
+dotfiles:install-dotfiles.sh:dotfiles の配置
+docker:install-docker.sh:Docker Engine
+mise:install-mise.sh:mise + Node.js / pnpm
+claude:install-claude.sh:Claude Code
+claude-config:install-claude-config.sh:.claude 設定の配置
+'
 
-    sudo cp -f "$SCRIPT_DIR/bin/ec" /usr/local/bin/
-    sudo chmod +x /usr/local/bin/ec
+usage() {
+    warn "usage: $0 [all|<step>...]"
+    warn ""
+    warn "  all             全部を上から順に実行 (既定)"
+    echo "$STEPS" | while IFS=: read -r name script desc; do
+        [ -n "$name" ] || continue
+        printf '  %-15s %s\n' "$name" "$desc" >&2
+    done
+}
+
+# ステップ名からスクリプト名を引く。無ければ空を返す。
+step_script() {
+    echo "$STEPS" | while IFS=: read -r name script desc; do
+        [ "$name" = "$1" ] || continue
+        echo "$script"
+        break
+    done
+}
+
+run_step() {
+    _script=$(step_script "$1")
+    [ -n "$_script" ] || { warn "unknown step: $1"; usage; exit 1; }
+    "$SCRIPT_DIR/$_script" </dev/null
+}
+
+run_all() {
+    _names=$(echo "$STEPS" | while IFS=: read -r name script desc; do
+        [ -n "$name" ] && echo "$name"
+    done)
+    for _name in $_names; do
+        run_step "$_name"
+    done
 }
 
 case "${1:-all}" in
+    -h|--help|help)
+        usage
+        exit 0
+        ;;
     all)
-        "$SCRIPT_DIR/install-locale.sh"
-        "$SCRIPT_DIR/install-packages.sh"
-        install_dotfiles
-        "$SCRIPT_DIR/install-docker.sh"
-        "$SCRIPT_DIR/install-mise.sh"
-        "$SCRIPT_DIR/install-claude.sh"
-        "$SCRIPT_DIR/install-claude-config.sh"
-        ;;
-    locale)
-        "$SCRIPT_DIR/install-locale.sh"
-        ;;
-    dotfiles)
-        install_dotfiles
-        ;;
-    packages)
-        "$SCRIPT_DIR/install-packages.sh"
-        ;;
-    docker)
-        "$SCRIPT_DIR/install-docker.sh"
-        ;;
-    mise)
-        "$SCRIPT_DIR/install-mise.sh"
-        ;;
-    claude)
-        "$SCRIPT_DIR/install-claude.sh"
-        ;;
-    claude-config)
-        "$SCRIPT_DIR/install-claude-config.sh"
+        [ $# -le 1 ] || { warn "all と個別ステップは同時に指定できない"; exit 1; }
+        run_all
         ;;
     *)
-        echo "usage: $0 [all|locale|dotfiles|packages|docker|mise|claude|claude-config]" >&2
-        exit 1
+        for _arg in "$@"; do
+            run_step "$_arg"
+        done
         ;;
 esac
