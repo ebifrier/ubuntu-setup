@@ -52,7 +52,8 @@ run_step() {
 
 run_all() {
     _names=$(echo "$STEPS" | while IFS=: read -r name script desc; do
-        [ -n "$name" ] && echo "$name"
+        [ -n "$name" ] || continue
+        echo "$name"
     done)
     for _name in $_names; do
         run_step "$_name"
