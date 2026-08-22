@@ -16,7 +16,8 @@ mkdir -p "$DEST"
 # 設定ファイル。セッション履歴やキャッシュは持ち込まない。
 cp -f "$SRC/CLAUDE.md" "$SRC/RTK.md" "$SRC/settings.json" "$DEST/"
 for d in rules skills hooks scripts; do
-    rm -rf "$DEST/$d"
+    # DEST が空でも / を消しに行かないように :? を噛ませる。
+    rm -rf "${DEST:?}/$d"
     cp -rf "$SRC/$d" "$DEST/"
 done
 chmod +x "$DEST/scripts/"*.sh "$DEST/hooks/"*.sh

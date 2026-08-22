@@ -19,7 +19,8 @@ CONFIG_DIR="$SCRIPT_DIR/config"
 RECREATE=".emacs.d"
 
 for _dir in $RECREATE; do
-    rm -rf "$HOME/$_dir"
+    # HOME が空でも / を消しに行かないように :? を噛ませる。
+    rm -rf "${HOME:?}/$_dir"
 done
 
 for _src in "$CONFIG_DIR"/.[!.]*; do

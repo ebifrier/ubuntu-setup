@@ -46,5 +46,7 @@ fi
 
 note "新しいシェルを開くと mise / node / pnpm が使える。"
 if [ -d "$HOME/.nvm" ]; then
+    # 表示するだけの文言なので ~ が展開されなくてよい。
+    # shellcheck disable=SC2088
     note "~/.nvm が残っている。mise に移ったので rm -rf ~/.nvm と、~/.bashrc の NVM_DIR の行 (nvm 公式インストーラが書いたもの) を消してよい。"
 fi
