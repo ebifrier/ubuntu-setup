@@ -4,7 +4,7 @@ The setup file for ubuntu.
 ## 使い方
 
 ```sh
-./setup.sh                # 全部 (locale -> packages -> dotfiles -> docker -> mise -> claude -> claude-config)
+./setup.sh                # 全部 (locale -> packages -> dotfiles -> docker -> nvidia -> mise -> claude -> claude-config)
 ./setup.sh docker         # 特定のステップだけ
 ./setup.sh docker mise    # 複数指定も可 (指定した順に実行)
 ./setup.sh -h             # ステップ一覧
@@ -60,6 +60,41 @@ Ubuntu 同梱の `docker.io` / `docker-compose` / `podman-docker` は競合す�
 
 実行ユーザーを `docker` グループに入れるので、再ログイン後は `sudo` 無しで使える
 (すぐ試すなら `newgrp docker`)。
+
+### install-nvidia.sh
+
+GPU を渡した LXC コンテナの中に、NVIDIA ドライバの **userspace だけ**を入れる。
+
+```sh
+./install-nvidia.sh              # ホストのドライバ版に自動で合わせる
+./install-nvidia.sh 580.82.07    # バージョン指定
+```
+
+コンテナはホストとカーネルを共有するので、カーネルモジュールはホスト側のものを
+そのまま使う。ここで入れるのは `libcuda` / `nvidia-smi` などの userspace だけで、
+インストーラは `--no-kernel-modules` で走らせる。
+
+**ホストのモジュールとコンテナの userspace は版が完全に一致していないと動かない**
+(`Failed to initialize NVML: Driver/library version mismatch`)。
+版はスクリプトに焼かず、次の順で決める。
+
+1. 引数
+2. 環境変数 `NVIDIA_DRIVER_VERSION` (`proxmox/create-lxc.sh` が渡す)
+3. `/proc/driver/nvidia/version` (ホストのモジュールがコンテナからも見える)
+
+これで 4060 Ti のマシンと 5090 のマシンで同じスクリプトがそのまま通る。
+
+`/dev/nvidia0` が無ければ何もせずに終わるので、VM や GPU 無しのマシンでも
+`all` に入れっぱなしで害はない。
+
+`docker` が入っていれば続けて `nvidia-container-toolkit` も入れて
+`docker run --gpus all` を使えるようにする。このとき unprivileged な LXC では
+`no-cgroups = true` を設定する (コンテナ内からホストの cgroup を触れないため。
+これを外すと `nvidia-container-cli` が `operation not permitted` で落ちる)。
+
+CUDA toolkit や PyTorch はプロジェクトごとに入れる前提で、ここでは扱わない。
+
+**ホストのドライバを更新したら、コンテナ側も `./setup.sh nvidia` を流し直すこと。**
 
 ### install-mise.sh
 
@@ -175,10 +210,11 @@ config/               # 配置するもの
   .emacs .emacs.d .screenrc .tmux.conf   # -> $HOME
   mise.toml                              # -> ~/.config/mise/config.toml
 .claude/              # -> ~/.claude (このリポジトリ自身の設定も兼ねる)
-cloud-init/           # Proxmox の vendor-data
+cloud-init/           # Proxmox の vendor-data (VM 用)
+proxmox/              # PVE ホスト上で叩くスクリプト (LXC 用)
 ```
 
-## Proxmox で自動セットアップ (cloud-init)
+## Proxmox で自動セットアップ — VM (cloud-init)
 
 `cloud-init/vendor-data.yaml` を Proxmox の snippet として置いておくと、
 VM の初回起動時に自動でこのリポジトリを clone して `setup.sh` を実行する。
@@ -228,3 +264,93 @@ qm config 9000 | grep cicustom
 - クラスタ構成では `local:` はノードごとなので、VM が動く各ノードの
   `/var/lib/vz/snippets/` に置く。
 - 進行確認は `cloud-init status --wait`、ログは `/var/log/cloud-init-output.log`。
+
+
+## Proxmox で自動セットアップ — LXC (create-lxc.sh)
+
+`proxmox/create-lxc.sh` を **PVE ホスト上で root として**叩くと、LXC コンテナを
+作って `ubuntu-setup` を流し込むところまで一気にやる。
+
+```sh
+./create-lxc.sh 200 gpu-dev igoshogi                    # GPU 付き (既定)
+./create-lxc.sh 201 build   igoshogi --no-gpu
+./create-lxc.sh 202 tmp     igoshogi --dry-run          # コマンドを出すだけ
+./create-lxc.sh -h                                      # オプション一覧
+```
+
+やること:
+
+1. ホストの NVIDIA ドライバ版を `nvidia-smi` で検出
+2. `nvidia-modprobe -c 0 -u` で `/dev/nvidia-uvm` を生やす
+3. `pct create`（unprivileged / `nesting=1,keyctl=1`）
+4. `/dev/nvidia*` をコンテナに渡す
+5. `pct start` → ネットワークが上がるまで待つ
+6. `pct exec` で clone → `adduser.sh` → `setup.sh`（ドライバ版を渡す）
+
+**LXC には cloud-init が無い。** VM 側で使っている `cicustom` は `pct` には
+存在しないので、`pct create` してから `pct exec` で叩く形にしてある。
+
+### LXC と VM の使い分け
+
+分かれ目は Docker ではなく **GPU を分け合うかどうか**。
+
+| | GPU の渡り方 | 同時共有 | 条件 |
+|---|---|---|---|
+| VM | PCIe passthrough (VFIO) | 不可。1台が占有しホストからも消える | どの GPU でも可 |
+| VM | vGPU / SR-IOV | 可 | 要ライセンス。**GeForce は不可** |
+| LXC | `/dev/nvidia*` を bind mount | **可。複数コンテナから同時に使える** | ホストと版を揃える |
+
+コンテナはホストとカーネルを共有するので、ホストに入れた1枚のドライバを
+何個のコンテナからでも同時に見られる。GeForce では vGPU が使えないため、
+**GPU を複数ゲストで分け合う手段は事実上 LXC だけ**になる。
+
+- **LXC** — GPU を共有したい / オーバーヘッドを削りたい。必要なら中で Docker も動かす
+- **VM** — 隔離を効かせたい / 別カーネルが要る / GPU を1台に丸ごと占有させたい
+
+Docker は LXC の中でも動く（`nesting=1,keyctl=1` + `nvidia-container-toolkit`）。
+Proxmox 公式は VM を勧めているが、動かないという話ではない。
+
+### 準備 (PVE ホスト側で1回だけ)
+
+**1. コンテナテンプレート**
+
+```sh
+pveam update
+pveam available --section system | grep ubuntu
+pveam download local ubuntu-24.04-standard_24.04-2_amd64.tar.zst
+```
+
+`--template` を省略すると `local` にある一番新しい Ubuntu を自動で選ぶ。
+
+**2. NVIDIA ドライバ (GPU を使う場合)**
+
+コンテナ側と版を揃える必要があるので、apt ではなく `.run` で入れる。
+
+```sh
+apt install -y pve-headers-$(uname -r) build-essential
+
+VER=580.82.07
+curl -fLO https://download.nvidia.com/XFree86/Linux-x86_64/$VER/NVIDIA-Linux-x86_64-$VER.run
+sh NVIDIA-Linux-x86_64-$VER.run --silent
+
+nvidia-smi
+```
+
+`create-lxc.sh` は初回に `/etc/systemd/system/nvidia-lxc-devices.service` を置いて
+有効化する。ホスト再起動後に `/dev/nvidia-uvm` を作り直すためのもので、これが無いと
+再起動のたびに GPU 付きコンテナが GPU を見失う。
+
+### 注意点
+
+- **ホストとコンテナのドライバ版は完全一致が必須。** ホスト側を更新したら、
+  各コンテナで `./setup.sh nvidia` を流し直す。
+- `dev0:` 形式のデバイス渡しは PVE 8.2 以降。それより古い場合は
+  `/etc/pve/lxc/<ctid>.conf` に `lxc.cgroup2.devices.allow` /
+  `lxc.mount.entry` を直接書く方へ自動で落ちる。
+- unprivileged コンテナなので `mode=0666` でデバイスを渡している。
+  これが無いとコンテナ内の一般ユーザーからデバイスを開けない。
+- Docker から GPU を使うときは `--gpus all` を付ける。
+  `docker run --rm --gpus all nvidia/cuda:12.6.0-base-ubuntu24.04 nvidia-smi`
+- CUDA toolkit / PyTorch はプロジェクトごとに入れる。`setup.sh` はドライバまで。
+- `docker` グループと `LANG` の反映は次のログインから。
+- Claude Code の初回ログインだけは自動化できない (ブラウザ認証が必要)。
