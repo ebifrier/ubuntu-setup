@@ -1,11 +1,46 @@
 #!/bin/sh
+#
+# ubuntu 環境のセットアップ。
+#
+#   ./setup.sh             # 全部 (packages -> dotfiles -> claude)
+#   ./setup.sh dotfiles    # dotfiles の配置だけ
+#   ./setup.sh packages    # apt パッケージだけ
+#   ./setup.sh claude      # Claude Code だけ
+#
+set -e
 
-if [ -d $HOME/.emacs.d ]; then
-    rm -rf $HOME/.emacs.d
-fi
-cp -rf .emacs.d $HOME/
-cp -f .emacs $HOME/
-cp -f .screenrc $HOME
+SCRIPT_DIR=$(cd "$(dirname "$0")" && pwd)
 
-sudo cp -f bin/ec /usr/local/bin/
-sudo chmod +x /usr/local/bin/ec
+install_dotfiles() {
+    if [ -d "$HOME/.emacs.d" ]; then
+        rm -rf "$HOME/.emacs.d"
+    fi
+    cp -rf "$SCRIPT_DIR/.emacs.d" "$HOME/"
+    cp -f "$SCRIPT_DIR/.emacs" "$HOME/"
+    cp -f "$SCRIPT_DIR/.screenrc" "$HOME/"
+    cp -f "$SCRIPT_DIR/.tmux.conf" "$HOME/"
+
+    sudo cp -f "$SCRIPT_DIR/bin/ec" /usr/local/bin/
+    sudo chmod +x /usr/local/bin/ec
+}
+
+case "${1:-all}" in
+    all)
+        "$SCRIPT_DIR/install-packages.sh"
+        install_dotfiles
+        "$SCRIPT_DIR/install-claude.sh"
+        ;;
+    dotfiles)
+        install_dotfiles
+        ;;
+    packages)
+        "$SCRIPT_DIR/install-packages.sh"
+        ;;
+    claude)
+        "$SCRIPT_DIR/install-claude.sh"
+        ;;
+    *)
+        echo "usage: $0 [all|dotfiles|packages|claude]" >&2
+        exit 1
+        ;;
+esac
