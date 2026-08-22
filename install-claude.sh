@@ -10,6 +10,9 @@
 #
 set -e
 
+SCRIPT_DIR=$(cd "$(dirname "$0")" && pwd)
+. "$SCRIPT_DIR/lib/common.sh"
+
 CHANNEL=${1:-latest}
 LOCAL_BIN="$HOME/.local/bin"
 
@@ -20,19 +23,8 @@ fi
 
 curl -fsSL https://claude.ai/install.sh | bash -s "$CHANNEL"
 
-# ~/.local/bin を PATH に通す (未設定のときだけ .bashrc に追記)
-if ! grep -q 'ubuntu-setup: claude' "$HOME/.bashrc" 2>/dev/null; then
-    cat >> "$HOME/.bashrc" <<'BASHRC'
-
-# ubuntu-setup: claude
-case ":$PATH:" in
-    *":$HOME/.local/bin:"*) ;;
-    *) PATH="$HOME/.local/bin:$PATH" ;;
-esac
-export PATH
-BASHRC
-    echo "~/.bashrc に PATH の設定を追記した。新しいシェルから claude が使える。"
-fi
+# ~/.local/bin を PATH に通す (lib/common.sh)
+ensure_local_bin
 
 "$LOCAL_BIN/claude" --version
 

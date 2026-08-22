@@ -1,0 +1,11 @@
+# mise のグローバル設定。install-mise.sh が ~/.config/mise/config.toml に配置する。
+# (mise/config.toml という名前にすると repo に入っただけで自動で読まれるので config/ に置く)
+# 追加したいランタイムはここに書けば、setup.sh を流し直すだけで入る。
+#
+#   mise use -g python@3.12   # このファイルに追記される
+#   mise ls                   # 入っているもの
+#   mise upgrade              # 更新
+
+[tools]
+node = "lts"
+pnpm = "latest"

@@ -37,7 +37,7 @@ runcmd:
     DEST=/opt/ubuntu-setup
 
     # cloud-init が作った既定ユーザー (GUI の Cloud-Init タブの ciuser)。
-    # root で setup.sh を走らせると dotfiles / nvm / claude が /root に入るので、
+    # root で setup.sh を走らせると dotfiles / mise / claude が /root に入るので、
     # 必ずこのユーザーに落としてから実行する。
     SETUP_USER=$(getent passwd 1000 | cut -d: -f1)
     if [ -z "$SETUP_USER" ]; then

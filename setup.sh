@@ -2,10 +2,12 @@
 #
 # ubuntu 環境のセットアップ。
 #
-#   ./setup.sh                # 全部 (packages -> dotfiles -> nvm -> claude -> claude-config)
+#   ./setup.sh                # 全部 (locale -> packages -> dotfiles -> docker -> mise -> claude -> claude-config)
+#   ./setup.sh locale         # ja_JP.UTF-8 ロケールだけ
 #   ./setup.sh dotfiles       # dotfiles の配置だけ
 #   ./setup.sh packages       # apt パッケージだけ
-#   ./setup.sh nvm            # nvm + Node.js だけ
+#   ./setup.sh docker         # Docker だけ
+#   ./setup.sh mise           # mise + Node.js / pnpm だけ
 #   ./setup.sh claude         # Claude Code だけ
 #   ./setup.sh claude-config  # .claude 設定の配置だけ
 #
@@ -28,11 +30,16 @@ install_dotfiles() {
 
 case "${1:-all}" in
     all)
+        "$SCRIPT_DIR/install-locale.sh"
         "$SCRIPT_DIR/install-packages.sh"
         install_dotfiles
-        "$SCRIPT_DIR/install-nvm.sh"
+        "$SCRIPT_DIR/install-docker.sh"
+        "$SCRIPT_DIR/install-mise.sh"
         "$SCRIPT_DIR/install-claude.sh"
         "$SCRIPT_DIR/install-claude-config.sh"
+        ;;
+    locale)
+        "$SCRIPT_DIR/install-locale.sh"
         ;;
     dotfiles)
         install_dotfiles
@@ -40,8 +47,11 @@ case "${1:-all}" in
     packages)
         "$SCRIPT_DIR/install-packages.sh"
         ;;
-    nvm)
-        "$SCRIPT_DIR/install-nvm.sh"
+    docker)
+        "$SCRIPT_DIR/install-docker.sh"
+        ;;
+    mise)
+        "$SCRIPT_DIR/install-mise.sh"
         ;;
     claude)
         "$SCRIPT_DIR/install-claude.sh"
@@ -50,7 +60,7 @@ case "${1:-all}" in
         "$SCRIPT_DIR/install-claude-config.sh"
         ;;
     *)
-        echo "usage: $0 [all|dotfiles|packages|nvm|claude|claude-config]" >&2
+        echo "usage: $0 [all|locale|dotfiles|packages|docker|mise|claude|claude-config]" >&2
         exit 1
         ;;
 esac

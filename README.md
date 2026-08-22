@@ -4,13 +4,27 @@ The setup file for ubuntu.
 ## 使い方
 
 ```sh
-./setup.sh                # 全部 (packages -> dotfiles -> nvm -> claude -> claude-config)
+./setup.sh                # 全部 (locale -> packages -> dotfiles -> docker -> mise -> claude -> claude-config)
+./setup.sh locale         # ja_JP.UTF-8 ロケールだけ
 ./setup.sh packages       # apt パッケージだけ
 ./setup.sh dotfiles       # dotfiles の配置だけ
-./setup.sh nvm            # nvm + Node.js だけ
+./setup.sh docker         # Docker だけ
+./setup.sh mise           # mise + Node.js / pnpm だけ
 ./setup.sh claude         # Claude Code だけ
 ./setup.sh claude-config  # .claude 設定の配置だけ
 ```
+
+### install-locale.sh
+
+`ja_JP.UTF-8` を生成して `LANG` の既定にする
+(`locale-gen` が無ければ `locales` パッケージを入れてから実行する)。
+
+```sh
+./install-locale.sh                # ja_JP.UTF-8
+./install-locale.sh en_US.UTF-8    # ロケール指定
+```
+
+反映は次のログインから。今のシェルで使うなら `export LANG=ja_JP.UTF-8`。
 
 ### install-packages.sh
 
@@ -25,18 +39,45 @@ apt で以下を入れる。
 `bin/ec` を `/usr/local/bin` に入れる。
 ※ `$HOME/.emacs.d` は毎回作り直すので、ローカルの変更は消える。
 
-### install-nvm.sh
+### install-docker.sh
 
-nvm (Node Version Manager) を `~/.nvm` に入れて Node.js を入れる。
-`.bashrc` に nvm の読み込みが追記される (インストーラが書かなかったときのみ本体で追記)。
+Docker Engine を公式 apt リポジトリ (download.docker.com) から入れる。
+`docker compose` (plugin) と buildx も一緒に入る。
+Ubuntu 同梱の `docker.io` / `docker-compose` / `podman-docker` は競合するので先に外す。
 
 ```sh
-./install-nvm.sh         # nvm + Node.js LTS
-./install-nvm.sh 22      # nvm + Node.js 22 系
-./install-nvm.sh none    # nvm だけ (Node は入れない)
+./install-docker.sh
 ```
 
-入れた Node.js は `nvm alias default` で既定にするので、新しいシェルでそのまま使える。
+実行ユーザーを `docker` グループに入れるので、再ログイン後は `sudo` 無しで使える
+(すぐ試すなら `newgrp docker`)。
+
+### install-mise.sh
+
+[mise](https://mise.jdx.dev/) を `~/.local/bin/mise` に入れて、Node.js / pnpm などの
+ランタイムをまとめて管理する。nvm + `npm -g pnpm` の置き換え。
+入れるものは `config/mise.toml` (配置先は `~/.config/mise/config.toml`) で決まる。
+
+```sh
+./install-mise.sh        # mise + config/mise.toml のツール一式
+./install-mise.sh none   # mise 本体だけ (ツールは入れない)
+```
+
+```toml
+[tools]
+node = "lts"
+pnpm = "latest"
+```
+
+Python や Go を足したくなったら `mise use -g python@3.12` を叩くか、
+上の `[tools]` に1行足して `./setup.sh mise` を流し直す。
+
+`.bashrc` には shims (`~/.local/share/mise/shims`) への PATH を通す。
+shims にしておくと `ssh <host> <cmd>` や cron のような非対話シェルからも
+`node` / `pnpm` が使える。
+
+nvm から乗り換えた場合、`~/.nvm` と nvm 公式インストーラが `.bashrc` に書いた
+`NVM_DIR` の行は自前で消す (このリポジトリが書いたブロックは自動で消える)。
 
 ### install-claude.sh
 
@@ -66,6 +107,24 @@ Claude Code を公式のネイティブインストーラで入れる。
 claude 起動時に自動で取得される。
 context7 の API キーが要るときは `settings.json` の `env` に足す
 (キー自体はリポジトリに置かないこと)。
+
+### lib/common.sh
+
+各スクリプトから読み込む共通処理。単体では実行しない。
+
+`.bashrc` への追記は `ensure_bashrc_block <名前>` に集約してある。
+中身を標準入力で渡すと、マーカー行で囲んだブロックとして書き込む。
+
+```sh
+# >>> ubuntu-setup: mise >>>
+export PATH="$HOME/.local/share/mise/shims:$PATH"
+# <<< ubuntu-setup: mise <<<
+```
+
+- 何度流しても重複しない (中身が同じなら何もしないので、ブロックの順序も変わらない)
+- 中身を変えて流し直すと、そのブロックだけ差し替わる
+- `remove_bashrc_block <名前>` で消せる (mise が nvm / pnpm のブロックを片付けるのに使っている)
+- マーカーが無かった頃の `# ubuntu-setup: <名前>` 形式は `remove_legacy_bashrc_block` が移行用に消す
 
 ### adduser.sh
 
@@ -112,12 +171,14 @@ qm config 9000 | grep cicustom
 ### 注意点
 
 - `runcmd` は root で走るので `su - <ciuser>` に落としてから `setup.sh` を実行する。
-  root のまま走らせると dotfiles / nvm / claude が `/root` に入る。
+  root のまま走らせると dotfiles / mise / claude が `/root` に入る。
   ユーザーは `getent passwd 1000` で拾うので、GUI の Cloud-Init タブで
   User を設定しておくこと。
 - このリポジトリが private だと HTTPS clone が失敗する。
   その場合は deploy key を `write_files` で置く。
 - Claude Code の初回ログインだけは自動化できない (ブラウザ認証が必要)。
+- `docker` グループと `LANG` の変更は次のログインから効く。cloud-init 直後の
+  セッションでは反映されていないので、一度ログインし直すこと。
 - クラスタ構成では `local:` はノードごとなので、VM が動く各ノードの
   `/var/lib/vz/snippets/` に置く。
 - 進行確認は `cloud-init status --wait`、ログは `/var/log/cloud-init-output.log`。
