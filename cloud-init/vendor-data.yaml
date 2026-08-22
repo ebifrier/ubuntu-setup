@@ -1,0 +1,53 @@
+#cloud-config
+#
+# Proxmox の cloud-init vendor-data。
+# VM の初回起動時に ubuntu-setup を clone して setup.sh を実行する。
+#
+# PVE ホスト (ハイパーバイザ本体) 側での置き方:
+#
+#   pvesm set local --content iso,vztmpl,backup,snippets
+#   cp cloud-init/vendor-data.yaml /var/lib/vz/snippets/ubuntu-setup.yaml
+#   qm set <vmid> --cicustom "vendor=local:snippets/ubuntu-setup.yaml"
+#
+# user= ではなく vendor= を使うこと。user= だと Proxmox が GUI の
+# Cloud-Init タブから生成する user-data (ユーザー / パスワード / SSH 鍵 / IP)
+# を丸ごと置き換えてしまう。vendor= なら GUI 側はそのまま使える。
+#
+# ログ: /var/log/cloud-init-output.log
+# 完了待ち: cloud-init status --wait
+
+package_update: true
+packages:
+  - git
+  - qemu-guest-agent
+
+write_files:
+  # 初回起動直後は unattended-upgrades が dpkg のロックを握っていることがある。
+  # 即エラーにせず最大10分待たせる (install-packages.sh の apt-get にも効く)。
+  - path: /etc/apt/apt.conf.d/99lock-timeout
+    content: |
+      DPkg::Lock::Timeout "600";
+
+runcmd:
+  - systemctl enable --now qemu-guest-agent
+  - |
+    set -eu
+
+    REPO=https://github.com/ebifrier/ubuntu-setup
+    DEST=/opt/ubuntu-setup
+
+    # cloud-init が作った既定ユーザー (GUI の Cloud-Init タブの ciuser)。
+    # root で setup.sh を走らせると dotfiles / nvm / claude が /root に入るので、
+    # 必ずこのユーザーに落としてから実行する。
+    SETUP_USER=$(getent passwd 1000 | cut -d: -f1)
+    if [ -z "$SETUP_USER" ]; then
+        echo "uid 1000 のユーザーが見つからない。Cloud-Init の User を設定すること。" >&2
+        exit 1
+    fi
+
+    git clone --depth 1 "$REPO" "$DEST"
+    chown -R "$SETUP_USER:$SETUP_USER" "$DEST"
+
+    su - "$SETUP_USER" -c "$DEST/setup.sh"
+
+    echo "ubuntu-setup 完了 (user=$SETUP_USER)。claude は初回のみ手動ログインが必要。"
