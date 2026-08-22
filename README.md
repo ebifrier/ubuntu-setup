@@ -4,10 +4,11 @@ The setup file for ubuntu.
 ## 使い方
 
 ```sh
-./setup.sh             # 全部 (packages -> dotfiles -> claude)
-./setup.sh packages    # apt パッケージだけ
-./setup.sh dotfiles    # dotfiles の配置だけ
-./setup.sh claude      # Claude Code だけ
+./setup.sh                # 全部 (packages -> dotfiles -> claude -> claude-config)
+./setup.sh packages       # apt パッケージだけ
+./setup.sh dotfiles       # dotfiles の配置だけ
+./setup.sh claude         # Claude Code だけ
+./setup.sh claude-config  # .claude 設定の配置だけ
 ```
 
 ### install-packages.sh
@@ -36,6 +37,21 @@ Claude Code を公式のネイティブインストーラで入れる。
 ```
 
 初回はログインが必要なので `claude` を起動してブラウザの指示に従う。
+
+### install-claude-config.sh
+
+`.claude/` 以下 (CLAUDE.md / settings.json / rules / skills / hooks / scripts) を
+`$HOME/.claude` に配置する。セッション履歴・キャッシュ・認証情報は含めていない。
+
+```sh
+./install-claude-config.sh
+```
+
+プラグイン (joseki, claude-plugins-official) と context7 / playwright の MCP サーバーは
+`settings.json` の `enabledPlugins` / `extraKnownMarketplaces` を見て
+claude 起動時に自動で取得される。
+context7 の API キーが要るときは `settings.json` の `env` に足す
+(キー自体はリポジトリに置かないこと)。
 
 ### adduser.sh
 

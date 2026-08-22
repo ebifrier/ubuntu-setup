@@ -1,0 +1,50 @@
+{
+  "attribution": {
+    "commit": "",
+    "pr": "",
+    "sessionUrl": false
+  },
+  "permissions": {
+    "defaultMode": "auto",
+    "additionalDirectories": [
+      "/tmp"
+    ]
+  },
+  "model": "opus",
+  "statusLine": {
+    "type": "command",
+    "command": "bash $HOME/.claude/scripts/statusline.sh",
+    "padding": 0
+  },
+  "enabledPlugins": {
+    "commit-commands@claude-plugins-official": true,
+    "feature-dev@claude-plugins-official": true,
+    "frontend-design@claude-plugins-official": true,
+    "superpowers@claude-plugins-official": true,
+    "typescript-lsp@claude-plugins-official": true,
+    "joseki@joseki": true
+  },
+  "extraKnownMarketplaces": {
+    "claude-plugins-official": {
+      "source": {
+        "source": "github",
+        "repo": "anthropics/claude-plugins-official"
+      }
+    },
+    "joseki": {
+      "source": {
+        "source": "github",
+        "repo": "ebifrier/claude-joseki"
+      }
+    }
+  },
+  "effortLevel": "high",
+  "tui": "fullscreen",
+  "skipDangerousModePermissionPrompt": true,
+  "skipWorkflowUsageWarning": true,
+  "theme": "dark",
+  "autoCompactEnabled": true,
+  "remoteControlAtStartup": true,
+  "agentPushNotifEnabled": true,
+  "skipAutoPermissionPrompt": true
+}

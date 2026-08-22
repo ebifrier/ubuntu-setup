@@ -2,10 +2,11 @@
 #
 # ubuntu 環境のセットアップ。
 #
-#   ./setup.sh             # 全部 (packages -> dotfiles -> claude)
-#   ./setup.sh dotfiles    # dotfiles の配置だけ
-#   ./setup.sh packages    # apt パッケージだけ
-#   ./setup.sh claude      # Claude Code だけ
+#   ./setup.sh                # 全部 (packages -> dotfiles -> claude -> claude-config)
+#   ./setup.sh dotfiles       # dotfiles の配置だけ
+#   ./setup.sh packages       # apt パッケージだけ
+#   ./setup.sh claude         # Claude Code だけ
+#   ./setup.sh claude-config  # .claude 設定の配置だけ
 #
 set -e
 
@@ -29,6 +30,7 @@ case "${1:-all}" in
         "$SCRIPT_DIR/install-packages.sh"
         install_dotfiles
         "$SCRIPT_DIR/install-claude.sh"
+        "$SCRIPT_DIR/install-claude-config.sh"
         ;;
     dotfiles)
         install_dotfiles
@@ -39,8 +41,11 @@ case "${1:-all}" in
     claude)
         "$SCRIPT_DIR/install-claude.sh"
         ;;
+    claude-config)
+        "$SCRIPT_DIR/install-claude-config.sh"
+        ;;
     *)
-        echo "usage: $0 [all|dotfiles|packages|claude]" >&2
+        echo "usage: $0 [all|dotfiles|packages|claude|claude-config]" >&2
         exit 1
         ;;
 esac
