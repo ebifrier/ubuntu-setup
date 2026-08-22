@@ -4,9 +4,10 @@ The setup file for ubuntu.
 ## 使い方
 
 ```sh
-./setup.sh                # 全部 (packages -> dotfiles -> claude -> claude-config)
+./setup.sh                # 全部 (packages -> dotfiles -> nvm -> claude -> claude-config)
 ./setup.sh packages       # apt パッケージだけ
 ./setup.sh dotfiles       # dotfiles の配置だけ
+./setup.sh nvm            # nvm + Node.js だけ
 ./setup.sh claude         # Claude Code だけ
 ./setup.sh claude-config  # .claude 設定の配置だけ
 ```
@@ -23,6 +24,19 @@ apt で以下を入れる。
 `.emacs` / `.emacs.d` / `.screenrc` / `.tmux.conf` を `$HOME` に配置し、
 `bin/ec` を `/usr/local/bin` に入れる。
 ※ `$HOME/.emacs.d` は毎回作り直すので、ローカルの変更は消える。
+
+### install-nvm.sh
+
+nvm (Node Version Manager) を `~/.nvm` に入れて Node.js を入れる。
+`.bashrc` に nvm の読み込みが追記される (インストーラが書かなかったときのみ本体で追記)。
+
+```sh
+./install-nvm.sh         # nvm + Node.js LTS
+./install-nvm.sh 22      # nvm + Node.js 22 系
+./install-nvm.sh none    # nvm だけ (Node は入れない)
+```
+
+入れた Node.js は `nvm alias default` で既定にするので、新しいシェルでそのまま使える。
 
 ### install-claude.sh
 
