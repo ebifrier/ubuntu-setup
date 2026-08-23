@@ -15,7 +15,7 @@ SCRIPT_DIR=$(cd "$(dirname "$0")" && pwd)
 # ステップの定義。all の実行順もこの並び。
 # 名前:スクリプト:説明
 STEPS='
-locale:install-locale.sh:ja_JP.UTF-8 ロケール
+locale:install-locale.sh:ja_JP.UTF-8 ロケールと Asia/Tokyo タイムゾーン
 packages:install-packages.sh:apt パッケージ
 dotfiles:install-dotfiles.sh:dotfiles の配置
 git:install-git.sh:git の global 設定 (user.name / user.email)
