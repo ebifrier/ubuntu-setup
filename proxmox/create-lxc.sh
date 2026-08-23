@@ -8,7 +8,7 @@
 #   ./create-lxc.sh 200 gpu-dev igoshogi --with-gpu
 #   ./create-lxc.sh 201 build   igoshogi --steps "locale packages dotfiles"
 #   ./create-lxc.sh 202 tmp     igoshogi --dry-run
-#   ./create-lxc.sh 203 app     igoshogi --vlan 20
+#   ./create-lxc.sh 203 app     igoshogi --vlan 20 --ip dhcp
 #
 # VM 側の cloud-init (cloud-init/vendor-data.yaml) に相当するもの。
 # LXC には cloud-init を渡す仕組みが無いので、pct create してから
@@ -21,6 +21,11 @@
 #   ホストのカーネルモジュールとコンテナ内の userspace はバージョンが
 #   一致していないと動かないので、ホストの版を検出してコンテナに渡す。
 #   コンテナ側の導入は install-nvidia.sh が面倒を見る。
+#
+# IP について:
+#   既定 (--ip auto) は「ホストと同じ /24 で第4オクテット = ctid」の静的 IP。
+#   クラスタでは ctid が一意なので IP も一意になり、空き IP の帳簿は
+#   pct list で足りる。DNS は Pi-hole に hostname → IP を登録する。
 #
 # ホスト側の前提:
 #   - NVIDIA ドライバを .run で導入済み (nvidia-smi が通ること)
@@ -42,7 +47,7 @@ CORES=4
 MEMORY=4096
 SWAP=2048
 BRIDGE=vmbr0
-IP=dhcp
+IP=auto
 MAC=
 VLAN=
 SSH_KEYS=/root/.ssh/authorized_keys
@@ -66,7 +71,8 @@ usage() {
     warn "  --memory <MB>        メモリ (既定: $MEMORY)"
     warn "  --swap <MB>          swap (既定: $SWAP)"
     warn "  --bridge <name>      ネットワークブリッジ (既定: $BRIDGE)"
-    warn "  --ip <spec>          dhcp または CIDR,gw=... (既定: $IP)"
+    warn "  --ip <spec>          auto / dhcp / CIDR,gw=... (既定: $IP)"
+    warn "                       auto はホストと同じ /24 で第4オクテット = ctid"
     warn "  --mac <addr>         MAC アドレス (既定: ctid から自動)"
     warn "  --vlan <id>          VLAN tag 1-4094 (既定: 付けない)"
     warn "  --ssh-keys <file>    root に入れる公開鍵 (既定: $SSH_KEYS)"
@@ -206,6 +212,18 @@ bridge_is_vlan_aware() {
     [ "$(cat "/sys/class/net/$1/bridge/vlan_filtering" 2>/dev/null)" = 1 ]
 }
 
+# ホストがブリッジに持つ IPv4 (CIDR 表記) を返す。
+bridge_ipv4() {
+    ip -4 -o addr show dev "$1" scope global 2>/dev/null |
+        awk '{ print $4; exit }'
+}
+
+# ブリッジを通るデフォルトゲートウェイを返す。
+bridge_gateway() {
+    ip -4 route show default dev "$1" 2>/dev/null |
+        awk '{ print $3; exit }'
+}
+
 # コンテナのネットワークが上がるまで待つ。
 wait_for_network() {
     _n=0
@@ -286,6 +304,39 @@ if [ -n "$VLAN" ]; then
         warn "$BRIDGE は VLAN aware ではない。PVE は ${BRIDGE}v$VLAN を作って渡すので"
         warn "動きはするが、上流ポートが trunk になっているか確認する。"
     fi
+fi
+
+# --ip auto: 第4オクテット = ctid の静的 IP をホスト自身のアドレスから導出する。
+# クラスタでは ctid が一意なので IP も一意になり、空き IP は空き ctid と同義
+# (pct list が帳簿になる)。
+if [ "$IP" = auto ]; then
+    [ -z "$VLAN" ] ||
+        die "--vlan 先のサブネットは分からないので自動採番できない。--ip を明示する (dhcp も可)。"
+    [ "$CTID" -ge 100 ] && [ "$CTID" -le 254 ] ||
+        die "自動採番 (第4オクテット = ctid) は ctid 100-254 のみ。--ip を明示する。"
+
+    HOST_CIDR=$(bridge_ipv4 "$BRIDGE")
+    [ -n "$HOST_CIDR" ] || die "$BRIDGE に IPv4 アドレスが無い。--ip を明示する。"
+    [ "${HOST_CIDR#*/}" = 24 ] ||
+        die "$BRIDGE は /24 ではない ($HOST_CIDR)。自動採番は /24 前提なので --ip を明示する。"
+
+    GATEWAY=$(bridge_gateway "$BRIDGE")
+    [ -n "$GATEWAY" ] || die "$BRIDGE を通るデフォルトゲートウェイが無い。--ip を明示する。"
+
+    HOST_ADDR=${HOST_CIDR%/*}
+    CT_ADDR=${HOST_ADDR%.*}.$CTID
+    for _taken in "$HOST_ADDR" "$GATEWAY"; do
+        [ "$CT_ADDR" != "$_taken" ] || die "導出した $CT_ADDR は使用中 ($_taken)。--ip を明示する。"
+    done
+
+    # クラスタ化するまでは ctid の重複をホスト間で止められないので、
+    # 先客がいないかだけ見る (電源が落ちている相手までは検出できない)。
+    if ping -c 1 -W 1 "$CT_ADDR" >/dev/null 2>&1; then
+        die "$CT_ADDR は既に応答がある。別ホストが ctid $CTID を使っていないか確認する。"
+    fi
+
+    IP="$CT_ADDR/24,gw=$GATEWAY"
+    log "IP: $CT_ADDR (第4オクテット = ctid, gw $GATEWAY)"
 fi
 
 if [ -n "$MAC" ]; then
@@ -476,9 +527,16 @@ log "  入る:     pct enter $CTID"
 log "  MAC:      $MAC"
 if [ "$IP" = dhcp ]; then
     log "  DHCP 予約: dhcp-host=$MAC,<ip>,$CT_HOSTNAME"
+else
+    log "  IP:       ${IP%%/*}"
+    log "  Pi-hole:  DNS records に $CT_HOSTNAME → ${IP%%/*} を登録する"
 fi
 if [ -n "$SSH_INSTALLED" ]; then
-    log "  ssh:      ssh $CT_USER@<ip>   (pct exec $CTID -- ip -4 addr show eth0)"
+    if [ "$IP" = dhcp ]; then
+        log "  ssh:      ssh $CT_USER@<ip>   (pct exec $CTID -- ip -4 addr show eth0)"
+    else
+        log "  ssh:      ssh $CT_USER@${IP%%/*}"
+    fi
 fi
 if [ -n "$WITH_GPU" ]; then
     log "  GPU 確認: pct exec $CTID -- nvidia-smi"
