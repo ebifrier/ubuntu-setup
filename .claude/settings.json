@@ -23,7 +23,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "bash $HOME/.claude/hooks/rtk-rewrite.sh",
+            "command": "rtk hook claude",
             "timeout": 10
           }
         ]
