@@ -114,17 +114,18 @@ ensure_nvidia_devices() {
 
 # ホスト再起動後も /dev/nvidia* が揃うようにしておく。
 # これが無いと、再起動のたびに GPU 付きコンテナが GPU を見失う。
+# 内容を更新できるよう、既存でも毎回書き直す (冪等)。
 install_host_unit() {
     _unit=/etc/systemd/system/nvidia-lxc-devices.service
-    if [ -f "$_unit" ]; then
-        return 0
-    fi
 
     log "ホストに $_unit を置く (再起動後のデバイス生成用)..."
     if [ -n "$DRY_RUN" ]; then
         return 0
     fi
 
+    # nvidia-smi が全 GPU 分の /dev/nvidia[0-9]* を作り
+    # (modprobe -c 0 だけだと 2 枚目以降が生えない)、
+    # nvidia-modprobe (無ければ modprobe) が uvm を作る。
     cat > "$_unit" <<'UNIT'
 [Unit]
 Description=Create NVIDIA device nodes for LXC guests
@@ -134,7 +135,7 @@ Before=pve-guests.service
 [Service]
 Type=oneshot
 RemainAfterExit=yes
-ExecStart=/usr/bin/nvidia-modprobe -c 0 -u
+ExecStart=/bin/sh -c 'nvidia-smi >/dev/null 2>&1 || true; if command -v nvidia-modprobe >/dev/null 2>&1; then nvidia-modprobe -c 0 -u; else modprobe nvidia-uvm; fi'
 
 [Install]
 WantedBy=multi-user.target
@@ -160,8 +161,19 @@ has_dev_passthrough() {
 }
 
 # 旧 PVE 向け。/etc/pve/lxc/<ctid>.conf に lxc.* を直接書く。
+# bind mount はホスト側のパーミッションをそのまま引き継ぐので、
+# 全員が読み書きできないデバイスはコンテナ内の一般ユーザーから開けない。
 append_legacy_device_config() {
     _conf=/etc/pve/lxc/$1.conf
+
+    warn "この pct は dev0: に非対応。旧方式 (lxc.mount.entry) で GPU を渡す。"
+    nvidia_device_list | while read -r _d; do
+        case $(stat -c '%a' "$_d") in
+            *[67]) ;;
+            *) warn "$_d のモードが 0666 でないため、コンテナ内から開けない" \
+                    "可能性がある (NVreg_DeviceFileMode を確認する)。" ;;
+        esac
+    done
 
     log "$_conf に lxc.cgroup2 / lxc.mount.entry を追記する..."
     if [ -n "$DRY_RUN" ]; then
@@ -198,19 +210,34 @@ CT_HOSTNAME=$2
 CT_USER=$3
 shift 3
 
+for _a in "$CTID" "$CT_HOSTNAME" "$CT_USER"; do
+    case $_a in
+        -*) warn "オプションより先に <ctid> <hostname> <user> を並べる: $_a"
+            usage; exit 1 ;;
+    esac
+done
+
+# 値を取るオプションに値が付いているか確かめる ($1=オプション名 $2=値)。
+optval() {
+    [ $# -ge 2 ] || die "$1 には値が要る。"
+    case $2 in
+        -*) die "$1 には値が要る: $2" ;;
+    esac
+}
+
 while [ $# -gt 0 ]; do
     case $1 in
-        --template)    TEMPLATE=$2;    shift 2 ;;
-        --storage)     STORAGE=$2;     shift 2 ;;
-        --rootfs-size) ROOTFS_SIZE=$2; shift 2 ;;
-        --cores)       CORES=$2;       shift 2 ;;
-        --memory)      MEMORY=$2;      shift 2 ;;
-        --swap)        SWAP=$2;        shift 2 ;;
-        --bridge)      BRIDGE=$2;      shift 2 ;;
-        --ip)          IP=$2;          shift 2 ;;
-        --ssh-keys)    SSH_KEYS=$2;    shift 2 ;;
-        --repo)        REPO=$2;        shift 2 ;;
-        --steps)       STEPS=$2;       shift 2 ;;
+        --template)    optval "$@"; TEMPLATE=$2;    shift 2 ;;
+        --storage)     optval "$@"; STORAGE=$2;     shift 2 ;;
+        --rootfs-size) optval "$@"; ROOTFS_SIZE=$2; shift 2 ;;
+        --cores)       optval "$@"; CORES=$2;       shift 2 ;;
+        --memory)      optval "$@"; MEMORY=$2;      shift 2 ;;
+        --swap)        optval "$@"; SWAP=$2;        shift 2 ;;
+        --bridge)      optval "$@"; BRIDGE=$2;      shift 2 ;;
+        --ip)          optval "$@"; IP=$2;          shift 2 ;;
+        --ssh-keys)    optval "$@"; SSH_KEYS=$2;    shift 2 ;;
+        --repo)        optval "$@"; REPO=$2;        shift 2 ;;
+        --steps)       optval "$@"; STEPS=$2;       shift 2 ;;
         --no-gpu)      WITH_GPU=;      shift ;;
         --dry-run)     DRY_RUN=1;      shift ;;
         -h|--help)     usage; exit 0 ;;
@@ -248,6 +275,24 @@ if [ -n "$WITH_GPU" ]; then
     install_host_unit
 fi
 
+# ---------------------------------------------------------- 失敗時の後始末
+
+# 作りかけのコンテナは勝手に消さず、片付け方を案内する。
+PROVISION=
+CREATED=
+cleanup() {
+    _rc=$?
+    if [ -n "$PROVISION" ]; then
+        rm -f "$PROVISION"
+    fi
+    if [ "$_rc" -ne 0 ] && [ -n "$CREATED" ]; then
+        warn ""
+        warn "途中で失敗したため、作りかけのコンテナ $CTID が残っている。"
+        warn "片付けてやり直すには: pct stop $CTID; pct destroy $CTID"
+    fi
+}
+trap cleanup EXIT
+
 # ------------------------------------------------------------------ 作成
 
 set -- create "$CTID" "$TEMPLATE" \
@@ -261,8 +306,10 @@ set -- create "$CTID" "$TEMPLATE" \
     --net0 "name=eth0,bridge=$BRIDGE,ip=$IP" \
     --onboot 1
 
+SSH_INSTALLED=
 if [ -r "$SSH_KEYS" ]; then
     set -- "$@" --ssh-public-keys "$SSH_KEYS"
+    SSH_INSTALLED=1
 else
     warn "$SSH_KEYS が読めないので ssh 鍵は設定しない。"
 fi
@@ -281,6 +328,7 @@ fi
 
 log "コンテナ $CTID ($CT_HOSTNAME) を作る..."
 run pct "$@"
+[ -n "$DRY_RUN" ] || CREATED=1
 
 if [ -n "$WITH_GPU" ] && [ -z "$USE_DEV_PASSTHROUGH" ]; then
     append_legacy_device_config "$CTID"
@@ -298,7 +346,6 @@ fi
 # ------------------------------------------------------------ プロビジョニング
 
 PROVISION=$(mktemp)
-trap 'rm -f "$PROVISION"' EXIT
 
 # クォート付き heredoc なのでここでは変数を展開しない。ホスト側の値は
 # pct exec の引数で渡す (シェルへの埋め込みを避けるため)。
@@ -318,8 +365,10 @@ CT_USER=$3
 DRIVER_VERSION=$4
 shift 4
 
-apt-get update
-apt-get install -y git sudo ca-certificates curl
+# 起動直後は unattended-upgrades が dpkg ロックを掴んでいることがあるので
+# 待つ (cloud-init/vendor-data.yaml の 99lock-timeout と同じ対策)。
+apt-get -o DPkg::Lock::Timeout=600 update
+apt-get -o DPkg::Lock::Timeout=600 install -y git sudo ca-certificates curl
 
 if [ -d "$DEST/.git" ]; then
     git -C "$DEST" pull --ff-only
@@ -369,7 +418,9 @@ fi
 log ""
 log "コンテナ $CTID ($CT_HOSTNAME) の準備ができた。"
 log "  入る:     pct enter $CTID"
-log "  ssh:      ssh $CT_USER@<ip>   (pct exec $CTID -- ip -4 addr show eth0)"
+if [ -n "$SSH_INSTALLED" ]; then
+    log "  ssh:      ssh $CT_USER@<ip>   (pct exec $CTID -- ip -4 addr show eth0)"
+fi
 if [ -n "$WITH_GPU" ]; then
     log "  GPU 確認: pct exec $CTID -- nvidia-smi"
 fi
