@@ -15,12 +15,12 @@ mkdir -p "$DEST"
 
 # 設定ファイル。セッション履歴やキャッシュは持ち込まない。
 cp -f "$SRC/CLAUDE.md" "$SRC/RTK.md" "$SRC/settings.json" "$DEST/"
-for d in rules skills hooks scripts; do
+for d in rules skills scripts; do
     # DEST が空でも / を消しに行かないように :? を噛ませる。
     rm -rf "${DEST:?}/$d"
     cp -rf "$SRC/$d" "$DEST/"
 done
-chmod +x "$DEST/scripts/"*.sh "$DEST/hooks/"*.sh
+chmod +x "$DEST/scripts/"*.sh
 
 # プラグイン (joseki など) と MCP サーバーは settings.json の
 # enabledPlugins / extraKnownMarketplaces を見て claude 起動時に自動で入る。

@@ -34,7 +34,7 @@ The setup file for ubuntu.
 apt で以下を入れる。
 
 - 基本: `tmux` `git` `curl` `wget` `build-essential` `ca-certificates`
-- 開発ツール: `global` (gtags) `python3-pip` `unzip` `htop` `jq` (`jq` は rtk のフックが使う)
+- 開発ツール: `global` (gtags) `python3-pip` `unzip` `htop` `jq` (`jq` は statusline のスクリプトが使う)
 
 ### install-dotfiles.sh
 
@@ -188,20 +188,19 @@ Claude Code を公式のネイティブインストーラで入れる。
 ./install-rtk.sh v0.28.2  # バージョン指定
 ```
 
-Claude Code からは `settings.json` の `PreToolUse` フック
-(`~/.claude/hooks/rtk-rewrite.sh`) が `git status` -> `rtk git status` のように
-書き換える。フックの実体と登録は `install-claude-config.sh` が配置するので、
-rtk 単体で入れただけでは有効にならない (逆も同じで、rtk が無いときフックは
-警告を出して素通りする)。フックは `jq` に依存する (`install-packages.sh` で入る)。
+Claude Code からは `settings.json` の `PreToolUse` フック (`rtk hook claude`)
+が `git status` -> `rtk git status` のように書き換える。フックは rtk 本体の
+サブコマンドで、登録は `install-claude-config.sh` が配置する `settings.json`
+に入っているので、rtk 単体で入れただけでは有効にならない。
 
 削減量は `rtk gain` で見られる。
 
 ### install-claude-config.sh
 
-`.claude/` 以下 (CLAUDE.md / settings.json / rules / skills / hooks / scripts) を
+`.claude/` 以下 (CLAUDE.md / settings.json / rules / skills / scripts) を
 `$HOME/.claude` に配置する。セッション履歴・キャッシュ・認証情報は含めていない。
 
-`settings.json` には rtk の `PreToolUse` フック (`hooks/rtk-rewrite.sh`) の登録も
+`settings.json` には rtk の `PreToolUse` フック (`rtk hook claude`) の登録も
 入っているので、rtk 本体は `install-rtk.sh` で入れておく。
 
 ```sh

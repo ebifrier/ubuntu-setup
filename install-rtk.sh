@@ -7,8 +7,8 @@
 #   ./install-rtk.sh v0.28.2  # バージョン指定
 #
 # Claude Code からは .claude/settings.json の PreToolUse フック
-# (~/.claude/hooks/rtk-rewrite.sh) 経由で呼ばれる。フックの実体は
-# install-claude-config.sh が配置し、動作には jq が要る。
+# (rtk 本体の `rtk hook claude`) 経由で呼ばれる。登録は
+# install-claude-config.sh が配置する settings.json に入っている。
 #
 set -e
 
@@ -30,10 +30,5 @@ curl -fsSL "$INSTALL_URL" |
 ensure_local_bin
 
 "$LOCAL_BIN/rtk" --version
-
-# フックが rtk rewrite の入出力を組み立てるのに使う。
-if ! command -v jq >/dev/null 2>&1; then
-    note "jq が無いと Claude Code の rtk フックは何もしない。./setup.sh packages を流す。"
-fi
 
 note "rtk のフックは claude の再起動から有効。'rtk gain' で削減量を見られる。"
