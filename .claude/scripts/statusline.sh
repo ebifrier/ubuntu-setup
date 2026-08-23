@@ -12,6 +12,7 @@ set -uo pipefail
 input=$(cat)
 
 # jq で必要なフィールドを TSV 一発取得 (フィールド欠落時はフォールバック値)
+# shellcheck disable=SC2034  # 使わないフィールドも TSV の受け皿として読む
 IFS=$'\t' read -r MODEL CTX FIVEH FIVEH_RESET SEVEND SEVEND_RESET COST API_MS LINES_ADD LINES_DEL <<EOF
 $(printf '%s' "$input" | jq -r '[
   (.model.display_name                       // "Claude"),
@@ -45,7 +46,6 @@ fmt_left() {
     h) printf "%dh" $(( (target - now + 3599) / 3600 )) ;;
   esac
 }
-LEFT5H=$(fmt_left "$FIVEH_RESET"  m)
 LEFT7D=$(fmt_left "$SEVEND_RESET" h)
 
 # Fable 専用の週次枠 (公式 JSON に無いので自前キャッシュ経由)
@@ -82,7 +82,6 @@ fi
 
 # 表示整形
 COST_FMT=$(awk -v c="${COST:-0}"     'BEGIN{ printf "%.2f", c }')
-API_FMT=$(awk  -v m="${API_MS:-0}"   'BEGIN{ printf "%.1f", m/1000 }')
 
 # % 値の整形 (整数化, "—" はそのまま)
 fmt_pct() {

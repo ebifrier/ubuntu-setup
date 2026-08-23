@@ -26,6 +26,7 @@ sudo chmod a+r /etc/apt/keyrings/docker.gpg
 
 # リポジトリ。Mint などの派生では UBUNTU_CODENAME を使う。
 ARCH=$(dpkg --print-architecture)
+# shellcheck disable=SC1091  # /etc/os-release は実行時のホストにしか無い
 CODENAME=$(. /etc/os-release && echo "${UBUNTU_CODENAME:-$VERSION_CODENAME}")
 echo "deb [arch=$ARCH signed-by=/etc/apt/keyrings/docker.gpg] https://download.docker.com/linux/ubuntu $CODENAME stable" |
     sudo tee /etc/apt/sources.list.d/docker.list >/dev/null
