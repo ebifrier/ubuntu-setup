@@ -4,7 +4,7 @@ The setup file for ubuntu.
 ## 使い方
 
 ```sh
-./setup.sh                # 全部 (locale -> packages -> dotfiles -> git -> docker -> nvidia -> mise -> claude -> rtk -> claude-config)
+./setup.sh                # 全部 (locale -> packages -> dotfiles -> git -> gh -> docker -> nvidia -> mise -> claude -> rtk -> claude-config)
 ./setup.sh docker         # 特定のステップだけ
 ./setup.sh docker mise    # 複数指定も可 (指定した順に実行)
 ./setup.sh -h             # ステップ一覧
@@ -33,7 +33,7 @@ The setup file for ubuntu.
 
 apt で以下を入れる。
 
-- 基本: `screen` `tmux` `emacs-nox` `git` `curl` `wget` `build-essential` `ca-certificates`
+- 基本: `tmux` `git` `curl` `wget` `build-essential` `ca-certificates`
 - 開発ツール: `global` (gtags) `python3-pip` `unzip` `htop` `jq` (`jq` は rtk のフックが使う)
 
 ### install-dotfiles.sh
@@ -59,6 +59,18 @@ apt で以下を入れる。
 
 環境変数 `GIT_USER_NAME` / `GIT_USER_EMAIL` でも上書きできる。
 別人の環境に配るときはここを変える。
+
+### install-gh.sh
+
+GitHub CLI (`gh`) を公式 apt リポジトリ (cli.github.com) から入れる。
+Ubuntu 同梱の `gh` は版が古いので使わない。
+
+```sh
+./install-gh.sh
+```
+
+認証はしないので、使う前に `gh auth login` を手で通す
+(未認証なら「セットアップ後のメモ」に出る)。
 
 ### install-docker.sh
 

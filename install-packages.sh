@@ -8,7 +8,7 @@ SCRIPT_DIR=$(cd "$(dirname "$0")" && pwd)
 . "$SCRIPT_DIR/lib/common.sh"
 
 # 基本セット
-PACKAGES_BASE="screen tmux emacs-nox git curl wget build-essential ca-certificates"
+PACKAGES_BASE="tmux git curl wget build-essential ca-certificates"
 
 # 開発ツール系 (global = GNU GLOBAL / gtags)
 PACKAGES_DEV="global python3-pip unzip htop jq"

@@ -19,6 +19,7 @@ locale:install-locale.sh:ja_JP.UTF-8 ロケールと Asia/Tokyo タイムゾー�
 packages:install-packages.sh:apt パッケージ
 dotfiles:install-dotfiles.sh:dotfiles の配置
 git:install-git.sh:git の global 設定 (user.name / user.email)
+gh:install-gh.sh:GitHub CLI (gh)
 docker:install-docker.sh:Docker Engine
 nvidia:install-nvidia.sh:NVIDIA ドライバ (GPU 付き LXC のみ)
 mise:install-mise.sh:mise + Node.js / pnpm
