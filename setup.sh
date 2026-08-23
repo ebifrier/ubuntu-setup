@@ -20,6 +20,7 @@ packages:install-packages.sh:apt パッケージ
 dotfiles:install-dotfiles.sh:dotfiles の配置
 git:install-git.sh:git の global 設定 (user.name / user.email)
 gh:install-gh.sh:GitHub CLI (gh)
+awscli:install-awscli.sh:AWS CLI v2
 docker:install-docker.sh:Docker Engine
 nvidia:install-nvidia.sh:NVIDIA ドライバ (GPU 付き LXC のみ)
 mise:install-mise.sh:mise + Node.js / pnpm

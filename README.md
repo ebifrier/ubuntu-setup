@@ -4,7 +4,7 @@ The setup file for ubuntu.
 ## 使い方
 
 ```sh
-./setup.sh                # 全部 (locale -> packages -> dotfiles -> git -> gh -> docker -> nvidia -> mise -> claude -> rtk -> claude-config)
+./setup.sh                # 全部 (locale -> packages -> dotfiles -> git -> gh -> awscli -> docker -> nvidia -> mise -> claude -> rtk -> claude-config)
 ./setup.sh docker         # 特定のステップだけ
 ./setup.sh docker mise    # 複数指定も可 (指定した順に実行)
 ./setup.sh -h             # ステップ一覧
@@ -71,6 +71,22 @@ Ubuntu 同梱の `gh` は版が古いので使わない。
 
 認証はしないので、使う前に `gh auth login` を手で通す
 (未認証なら「セットアップ後のメモ」に出る)。
+
+### install-awscli.sh
+
+AWS CLI v2 を公式の zip インストーラ (awscli.amazonaws.com) から入れる。
+Ubuntu 同梱の `awscli` は v1 で版も古いので使わない。
+
+```sh
+./install-awscli.sh           # 最新版
+./install-awscli.sh 2.27.54   # バージョン指定
+```
+
+`/usr/local/aws-cli` に入り、`/usr/local/bin/aws` から辿れる。
+既に入っていれば `--update` で入れ直す。
+
+認証情報は設定しないので、使う前に `aws configure` を手で通す
+(`~/.aws` が無ければ「セットアップ後のメモ」に出る)。
 
 ### install-docker.sh
 
