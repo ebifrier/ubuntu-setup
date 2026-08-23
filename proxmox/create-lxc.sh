@@ -5,8 +5,8 @@
 #
 #   ./create-lxc.sh <ctid> <hostname> <user> [オプション]
 #
-#   ./create-lxc.sh 200 gpu-dev igoshogi
-#   ./create-lxc.sh 201 build   igoshogi --no-gpu --steps "locale packages dotfiles"
+#   ./create-lxc.sh 200 gpu-dev igoshogi --with-gpu
+#   ./create-lxc.sh 201 build   igoshogi --steps "locale packages dotfiles"
 #   ./create-lxc.sh 202 tmp     igoshogi --dry-run
 #
 # VM 側の cloud-init (cloud-init/vendor-data.yaml) に相当するもの。
@@ -44,7 +44,7 @@ BRIDGE=vmbr0
 IP=dhcp
 SSH_KEYS=/root/.ssh/authorized_keys
 STEPS=
-WITH_GPU=1
+WITH_GPU=
 DRY_RUN=
 
 # ------------------------------------------------------------------ 関数
@@ -67,7 +67,7 @@ usage() {
     warn "  --ssh-keys <file>    root に入れる公開鍵 (既定: $SSH_KEYS)"
     warn "  --repo <url>         clone するリポジトリ (既定: $REPO)"
     warn "  --steps \"<step>...\"  setup.sh に渡すステップ (既定: 全部)"
-    warn "  --no-gpu             GPU を渡さない"
+    warn "  --with-gpu           GPU を渡す (既定は渡さない)"
     warn "  --dry-run            実行せずコマンドだけ出す"
 }
 
@@ -238,7 +238,7 @@ while [ $# -gt 0 ]; do
         --ssh-keys)    optval "$@"; SSH_KEYS=$2;    shift 2 ;;
         --repo)        optval "$@"; REPO=$2;        shift 2 ;;
         --steps)       optval "$@"; STEPS=$2;       shift 2 ;;
-        --no-gpu)      WITH_GPU=;      shift ;;
+        --with-gpu)    WITH_GPU=1;     shift ;;
         --dry-run)     DRY_RUN=1;      shift ;;
         -h|--help)     usage; exit 0 ;;
         *)             warn "unknown option: $1"; usage; exit 1 ;;
@@ -264,7 +264,7 @@ fi
 DRIVER_VERSION=
 if [ -n "$WITH_GPU" ]; then
     command -v nvidia-smi >/dev/null 2>&1 ||
-        die "nvidia-smi が無い。ホストにドライバを入れるか --no-gpu を付ける。"
+        die "nvidia-smi が無い。ホストにドライバを入れるか --with-gpu を外す。"
 
     DRIVER_VERSION=$(nvidia-smi --query-gpu=driver_version --format=csv,noheader |
         head -n 1)

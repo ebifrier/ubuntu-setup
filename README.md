@@ -306,20 +306,23 @@ qm config 9000 | grep cicustom
 作って `ubuntu-setup` を流し込むところまで一気にやる。
 
 ```sh
-./create-lxc.sh 200 gpu-dev igoshogi                    # GPU 付き (既定)
-./create-lxc.sh 201 build   igoshogi --no-gpu
-./create-lxc.sh 202 tmp     igoshogi --dry-run          # コマンドを出すだけ
-./create-lxc.sh -h                                      # オプション一覧
+./create-lxc.sh 200 gpu-dev igoshogi --with-gpu   # GPU を渡す
+./create-lxc.sh 201 build   igoshogi              # GPU 無し (既定)
+./create-lxc.sh 202 tmp     igoshogi --dry-run    # コマンドを出すだけ
+./create-lxc.sh -h                                # オプション一覧
 ```
 
 やること:
 
-1. ホストの NVIDIA ドライバ版を `nvidia-smi` で検出
-2. `nvidia-modprobe -c 0 -u` で `/dev/nvidia-uvm` を生やす
-3. `pct create`（unprivileged / `nesting=1,keyctl=1`）
-4. `/dev/nvidia*` をコンテナに渡す
-5. `pct start` → ネットワークが上がるまで待つ
-6. `pct exec` で clone → `adduser.sh` → `setup.sh`（ドライバ版を渡す）
+1. `pct create`（unprivileged / `nesting=1,keyctl=1`）
+2. `pct start` → ネットワークが上がるまで待つ
+3. `pct exec` で clone → `adduser.sh` → `setup.sh`（ドライバ版を渡す）
+
+`--with-gpu` を付けたときは、これに加えて:
+
+- ホストの NVIDIA ドライバ版を `nvidia-smi` で検出
+- `nvidia-modprobe -c 0 -u` で `/dev/nvidia-uvm` を生やす
+- `/dev/nvidia*` をコンテナに渡す
 
 **LXC には cloud-init が無い。** VM 側で使っている `cicustom` は `pct` には
 存在しないので、`pct create` してから `pct exec` で叩く形にしてある。
