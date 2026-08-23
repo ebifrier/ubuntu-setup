@@ -309,6 +309,7 @@ qm config 9000 | grep cicustom
 ./create-lxc.sh 200 gpu-dev igoshogi --with-gpu   # GPU を渡す
 ./create-lxc.sh 201 build   igoshogi              # GPU 無し (既定)
 ./create-lxc.sh 202 tmp     igoshogi --dry-run    # コマンドを出すだけ
+./create-lxc.sh 203 app     igoshogi --vlan 20     # VLAN 20 に置く
 ./create-lxc.sh -h                                # オプション一覧
 ```
 
@@ -326,6 +327,37 @@ qm config 9000 | grep cicustom
 
 **LXC には cloud-init が無い。** VM 側で使っている `cicustom` は `pct` には
 存在しないので、`pct create` してから `pct exec` で叩く形にしてある。
+
+### ネットワーク (MAC / VLAN)
+
+MAC は ctid から機械的に決まる。`BC:24:11` は Proxmox の OUI で、残り3バイトに
+ctid の10進6桁をそのまま埋める。
+
+| ctid | MAC |
+|---|---|
+| 100 | `BC:24:11:00:01:00` |
+| 152 | `BC:24:11:00:01:52` |
+| 200 | `BC:24:11:00:02:00` |
+
+MAC を見れば ctid が分かり、同じ ctid で作り直しても同じ MAC になる。つまり
+**DHCP の予約さえ書いておけば、コンテナを作り直しても別ホストへ移しても IP が変わらない。**
+ホストごとにサブネットを切らず、L2 はフラットのままにしておけるのはこのため。
+
+Pi-hole や dnsmasq 側にはこう書く (ホスト名まで書けば DNS も一緒に引ける)。
+
+```
+dhcp-host=BC:24:11:00:01:52,192.168.10.152,ct152
+```
+
+Pi-hole v6 なら Web UI の **Settings → DHCP → Static DHCP leases**、
+ファイルで持つなら `pihole-FTL --config misc.etc_dnsmasq_d true` を入れてから
+`/etc/dnsmasq.d/50-lxc.conf` に置き、`pihole restartdns` で反映する。
+
+`--mac` で明示すれば自動導出を上書きできる (ctid が 999999 を超える場合は必須)。
+
+VLAN は `--vlan <id>` で `net0` に `tag=` が付く。ブリッジが VLAN aware
+(`vlan_filtering=1`) でなければ PVE が `vmbr0v<id>` を作って渡すので動きはするが、
+上流ポートが trunk になっている必要がある。警告を出すだけで止めはしない。
 
 ### LXC と VM の使い分け
 

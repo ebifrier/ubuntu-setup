@@ -8,6 +8,7 @@
 #   ./create-lxc.sh 200 gpu-dev igoshogi --with-gpu
 #   ./create-lxc.sh 201 build   igoshogi --steps "locale packages dotfiles"
 #   ./create-lxc.sh 202 tmp     igoshogi --dry-run
+#   ./create-lxc.sh 203 app     igoshogi --vlan 20
 #
 # VM 側の cloud-init (cloud-init/vendor-data.yaml) に相当するもの。
 # LXC には cloud-init を渡す仕組みが無いので、pct create してから
@@ -42,6 +43,8 @@ MEMORY=4096
 SWAP=2048
 BRIDGE=vmbr0
 IP=dhcp
+MAC=
+VLAN=
 SSH_KEYS=/root/.ssh/authorized_keys
 STEPS=
 WITH_GPU=
@@ -64,6 +67,8 @@ usage() {
     warn "  --swap <MB>          swap (既定: $SWAP)"
     warn "  --bridge <name>      ネットワークブリッジ (既定: $BRIDGE)"
     warn "  --ip <spec>          dhcp または CIDR,gw=... (既定: $IP)"
+    warn "  --mac <addr>         MAC アドレス (既定: ctid から自動)"
+    warn "  --vlan <id>          VLAN tag 1-4094 (既定: 付けない)"
     warn "  --ssh-keys <file>    root に入れる公開鍵 (既定: $SSH_KEYS)"
     warn "  --repo <url>         clone するリポジトリ (既定: $REPO)"
     warn "  --steps \"<step>...\"  setup.sh に渡すステップ (既定: 全部)"
@@ -188,6 +193,19 @@ append_legacy_device_config() {
     done >> "$_conf"
 }
 
+# ctid から MAC を決める。BC:24:11 は Proxmox の OUI で、
+# 残り3バイトに ctid の10進6桁をそのまま埋める (152 -> BC:24:11:00:01:52)。
+# MAC を見れば ctid が分かり、ctid を作り直しても同じ MAC になるので、
+# DHCP の予約 (dhcp-host=<mac>,<ip>,<hostname>) を機械的に書ける。
+derive_mac() {
+    printf '%06d' "$1" | sed 's/\(..\)\(..\)\(..\)/BC:24:11:\1:\2:\3/'
+}
+
+# ブリッジが VLAN aware か (vlan_filtering=1) を見る。
+bridge_is_vlan_aware() {
+    [ "$(cat "/sys/class/net/$1/bridge/vlan_filtering" 2>/dev/null)" = 1 ]
+}
+
 # コンテナのネットワークが上がるまで待つ。
 wait_for_network() {
     _n=0
@@ -235,6 +253,8 @@ while [ $# -gt 0 ]; do
         --swap)        optval "$@"; SWAP=$2;        shift 2 ;;
         --bridge)      optval "$@"; BRIDGE=$2;      shift 2 ;;
         --ip)          optval "$@"; IP=$2;          shift 2 ;;
+        --mac)         optval "$@"; MAC=$2;         shift 2 ;;
+        --vlan)        optval "$@"; VLAN=$2;        shift 2 ;;
         --ssh-keys)    optval "$@"; SSH_KEYS=$2;    shift 2 ;;
         --repo)        optval "$@"; REPO=$2;        shift 2 ;;
         --steps)       optval "$@"; STEPS=$2;       shift 2 ;;
@@ -253,6 +273,29 @@ command -v pct >/dev/null 2>&1 || die "pct が無い。PVE ホスト上で実行
 echo "$CTID" | grep -qE '^[0-9]+$' || die "ctid は数字で指定する: $CTID"
 if pct status "$CTID" >/dev/null 2>&1; then
     die "ctid $CTID は既に使われている。"
+fi
+
+if [ -n "$VLAN" ]; then
+    echo "$VLAN" | grep -qE '^[0-9]+$' &&
+        [ "$VLAN" -ge 1 ] && [ "$VLAN" -le 4094 ] ||
+        die "vlan は 1-4094 で指定する: $VLAN"
+
+    # VLAN aware でなくても PVE が vmbr0v<tag> を作るので動く。
+    # ただし上流ポートが trunk になっていないと通らない。
+    if ! bridge_is_vlan_aware "$BRIDGE"; then
+        warn "$BRIDGE は VLAN aware ではない。PVE は ${BRIDGE}v$VLAN を作って渡すので"
+        warn "動きはするが、上流ポートが trunk になっているか確認する。"
+    fi
+fi
+
+if [ -n "$MAC" ]; then
+    echo "$MAC" | grep -qE '^([0-9A-Fa-f]{2}:){5}[0-9A-Fa-f]{2}$' ||
+        die "mac は aa:bb:cc:dd:ee:ff の形で指定する: $MAC"
+else
+    # 10進6桁を埋める都合で ctid は 999999 まで。
+    [ "$CTID" -le 999999 ] ||
+        die "ctid が 999999 を超えるときは --mac で明示する: $CTID"
+    MAC=$(derive_mac "$CTID")
 fi
 
 if [ -z "$TEMPLATE" ]; then
@@ -295,6 +338,11 @@ trap cleanup EXIT
 
 # ------------------------------------------------------------------ 作成
 
+NET0="name=eth0,bridge=$BRIDGE,hwaddr=$MAC,ip=$IP"
+if [ -n "$VLAN" ]; then
+    NET0="$NET0,tag=$VLAN"
+fi
+
 set -- create "$CTID" "$TEMPLATE" \
     --hostname "$CT_HOSTNAME" \
     --unprivileged 1 \
@@ -303,7 +351,7 @@ set -- create "$CTID" "$TEMPLATE" \
     --memory "$MEMORY" \
     --swap "$SWAP" \
     --rootfs "$STORAGE:$ROOTFS_SIZE" \
-    --net0 "name=eth0,bridge=$BRIDGE,ip=$IP" \
+    --net0 "$NET0" \
     --onboot 1
 
 SSH_INSTALLED=
@@ -425,6 +473,10 @@ fi
 log ""
 log "コンテナ $CTID ($CT_HOSTNAME) の準備ができた。"
 log "  入る:     pct enter $CTID"
+log "  MAC:      $MAC"
+if [ "$IP" = dhcp ]; then
+    log "  DHCP 予約: dhcp-host=$MAC,<ip>,$CT_HOSTNAME"
+fi
 if [ -n "$SSH_INSTALLED" ]; then
     log "  ssh:      ssh $CT_USER@<ip>   (pct exec $CTID -- ip -4 addr show eth0)"
 fi
