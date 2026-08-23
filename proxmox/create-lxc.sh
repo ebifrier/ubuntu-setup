@@ -97,6 +97,11 @@ ensure_nvidia_devices() {
         return 0
     fi
 
+    if [ -n "$DRY_RUN" ]; then
+        log "+ (nvidia-modprobe で /dev/nvidia* を作る)"
+        return 0
+    fi
+
     if command -v nvidia-modprobe >/dev/null 2>&1; then
         nvidia-modprobe -c 0 -u || true
     else
@@ -295,13 +300,23 @@ fi
 PROVISION=$(mktemp)
 trap 'rm -f "$PROVISION"' EXIT
 
-cat > "$PROVISION" <<EOF
+# クォート付き heredoc なのでここでは変数を展開しない。ホスト側の値は
+# pct exec の引数で渡す (シェルへの埋め込みを避けるため)。
+cat > "$PROVISION" <<'EOF'
 #!/bin/sh
 #
 # create-lxc.sh がコンテナ内で走らせる。
+#   $1: リポジトリ URL  $2: 展開先  $3: ユーザー名  $4: ドライバ版 (GPU 無しは空)
+#   $5 以降: setup.sh に渡すステップ
 #
 set -e
 export DEBIAN_FRONTEND=noninteractive
+
+REPO=$1
+DEST=$2
+CT_USER=$3
+DRIVER_VERSION=$4
+shift 4
 
 apt-get update
 apt-get install -y git sudo ca-certificates curl
@@ -318,29 +333,38 @@ fi
 
 # GPU のデバイスファイルを触れるようにしておく。
 for g in video render; do
-    if getent group "\$g" >/dev/null 2>&1; then
-        usermod -aG "\$g" "$CT_USER"
+    if getent group "$g" >/dev/null 2>&1; then
+        usermod -aG "$g" "$CT_USER"
     fi
 done
 
 chown -R "$CT_USER:$CT_USER" "$DEST"
 
-su - "$CT_USER" -c "NVIDIA_DRIVER_VERSION='$DRIVER_VERSION' '$DEST/setup.sh' $STEPS"
+# 値はシェル文字列に埋め込まず、ログインシェルの位置引数として渡す。
+su - "$CT_USER" -c 'DRV=$1; DEST=$2; shift 2; NVIDIA_DRIVER_VERSION="$DRV" exec "$DEST/setup.sh" "$@"' \
+    sh "$DRIVER_VERSION" "$DEST" "$@"
 EOF
 
 log "コンテナ内で clone と setup.sh を実行する..."
 if [ -n "$DRY_RUN" ]; then
     log "+ pct push $CTID <provision.sh> /root/provision.sh --perms 755"
-    log "+ pct exec $CTID -- /root/provision.sh"
+    log "+ pct exec $CTID -- /root/provision.sh $REPO $DEST $CT_USER $DRIVER_VERSION $STEPS"
     log ""
     log "--- provision.sh ---"
     cat "$PROVISION"
 else
     pct push "$CTID" "$PROVISION" /root/provision.sh --perms 755
-    pct exec "$CTID" -- /root/provision.sh
+    # shellcheck disable=SC2086  # STEPS は空白区切りで個々のステップに分ける
+    pct exec "$CTID" -- /root/provision.sh "$REPO" "$DEST" "$CT_USER" "$DRIVER_VERSION" $STEPS
 fi
 
 # ------------------------------------------------------------------ 完了
+
+if [ -n "$DRY_RUN" ]; then
+    log ""
+    log "dry-run: 実際には何も作っていない。"
+    exit 0
+fi
 
 log ""
 log "コンテナ $CTID ($CT_HOSTNAME) の準備ができた。"
