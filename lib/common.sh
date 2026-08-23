@@ -53,6 +53,39 @@ if [ -z "${NOTES_FILE:-}" ]; then
     trap 'print_notes; rm -f "$NOTES_FILE"' EXIT
 fi
 
+# ------------------------------------------------------------------ ロケール
+
+# ロケールが生成済みか (ja_JP.UTF-8 と ja_JP.utf8 のような表記揺れを吸収する)。
+locale_available() {
+    _want=$(echo "$1" | tr '[:upper:]' '[:lower:]' | sed 's/utf-8$/utf8/')
+    locale -a 2>/dev/null | tr '[:upper:]' '[:lower:]' | grep -qx "$_want"
+}
+
+# 環境の LANG / LC_ALL が未生成のロケールを指していると、perl で書かれた
+# update-locale などが実行のたびに "Setting locale failed" を吐く。
+# Proxmox の LXC テンプレートは /etc/default/locale が en_US.UTF-8 なのに
+# 生成済みなのは C.UTF-8 だけ、という組み合わせでこれに当たる
+# (su - のログインで pam_env が /etc/default/locale を読み込むため)。
+# セットアップの間だけ必ずあるロケールに落とす。恒久的な既定は
+# install-locale.sh が /etc/default/locale に書くので次のログインから効く。
+if locale_available C.UTF-8; then
+    _FALLBACK_LOCALE=C.UTF-8
+else
+    _FALLBACK_LOCALE=C
+fi
+
+if [ -n "${LC_ALL:-}" ] && ! locale_available "$LC_ALL"; then
+    warn "LC_ALL=$LC_ALL は生成されていないので $_FALLBACK_LOCALE で進める。"
+    LC_ALL=$_FALLBACK_LOCALE
+    export LC_ALL
+fi
+
+if [ -n "${LANG:-}" ] && ! locale_available "$LANG"; then
+    warn "LANG=$LANG は生成されていないので $_FALLBACK_LOCALE で進める。"
+    LANG=$_FALLBACK_LOCALE
+    export LANG
+fi
+
 # ------------------------------------------------------------------ コマンド
 
 # 必要なコマンドが無ければ止める。

@@ -359,6 +359,13 @@ cat > "$PROVISION" <<'EOF'
 set -e
 export DEBIAN_FRONTEND=noninteractive
 
+# pct exec はホスト側の環境変数をそのまま持ち込む。ホストの LANG が
+# コンテナ側に無いと apt の maintainer script (perl) が毎回
+# "Setting locale failed" を吐くので、テンプレートに必ずある
+# C.UTF-8 に落とす。su - 以降は lib/common.sh が同じ面倒を見る。
+export LANG=C.UTF-8
+unset LC_ALL LANGUAGE
+
 REPO=$1
 DEST=$2
 CT_USER=$3
