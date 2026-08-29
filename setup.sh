@@ -15,6 +15,7 @@ SCRIPT_DIR=$(cd "$(dirname "$0")" && pwd)
 # ステップの定義。all の実行順もこの並び。
 # 名前:スクリプト:説明
 STEPS='
+wsl:install-wsl.sh:WSL の設定 (/etc/wsl.conf と VS Code 用マウント。WSL のみ)
 locale:install-locale.sh:ja_JP.UTF-8 ロケールと Asia/Tokyo タイムゾーン
 packages:install-packages.sh:apt パッケージ
 dotfiles:install-dotfiles.sh:dotfiles の配置

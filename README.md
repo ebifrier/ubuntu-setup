@@ -4,7 +4,7 @@ The setup file for ubuntu.
 ## 使い方
 
 ```sh
-./setup.sh                # 全部 (locale -> packages -> dotfiles -> git -> gh -> awscli -> docker -> nvidia -> mise -> claude -> rtk -> claude-config)
+./setup.sh                # 全部 (wsl -> locale -> packages -> dotfiles -> git -> gh -> awscli -> docker -> nvidia -> mise -> claude -> rtk -> claude-config)
 ./setup.sh docker         # 特定のステップだけ
 ./setup.sh docker mise    # 複数指定も可 (指定した順に実行)
 ./setup.sh -h             # ステップ一覧
@@ -16,6 +16,72 @@ The setup file for ubuntu.
 
 「次のログインから有効」のような注意書きは各スクリプトが `note` で登録し、
 `setup.sh` の最後に「セットアップ後のメモ」としてまとめて出る。
+
+### install-wsl.sh
+
+WSL2 の Ubuntu 向けの設定。`/etc/wsl.conf` で Windows 側のドライブと `PATH` を
+持ち込まないようにし、それでも必要になる VS Code の拡張ディレクトリだけを
+`/etc/fstab` で read-only マウントして通す。
+
+```sh
+./install-wsl.sh              # Windows ユーザー名は自動で拾う
+./install-wsl.sh igoshogi     # 拾えないときは手で渡す
+```
+
+WSL でなければ何もせずに終わるので、`all` に入れっぱなしで害はない。
+Windows ユーザー名は 引数 → 環境変数 `WIN_USER` → `cmd.exe /c echo %USERNAME%`
+→ `/mnt/c/Users` の走査 の順で決める (interop を切ったあとは `cmd.exe` が
+使えないので、後ろ2つで拾う)。
+
+`/etc/wsl.conf` に書くのは次の4つ。
+
+```ini
+[automount]
+enabled = false
+mountFsTab = true
+
+[interop]
+enabled = false
+appendWindowsPath = false
+```
+
+- `automount.enabled = false` — `/mnt/c` などの自動マウントをやめる。DrvFs 越しの
+  ファイルアクセスは遅くパーミッションも Linux のものではないので、作業ファイルは
+  Linux 側の ext4 に置く
+- `automount.mountFsTab = true` — 自動マウントは切っても `/etc/fstab` は読ませる。
+  下の VS Code 用のマウントはこれで効く
+- `interop.enabled = false` — Linux から Windows の `.exe` を起動する仕組みを切る
+- `interop.appendWindowsPath = false` — `PATH` に Windows 側のパスを継ぎ足さない。
+  `python` や `node` が Windows 側のものに解決される事故が無くなり、パス探索も速くなる
+
+ファイルは丸ごと上書きせずこの4キーだけを差し替えるので、Ubuntu 既定の
+`[boot] systemd=true` のような他の設定は残る。`wsl.conf` / `fstab` とも、
+書き換える前の中身は初回だけ `.bak` に退避する。
+
+**VS Code の「Connect to WSL」**: WSL 拡張はサーバー起動スクリプト
+(`wslServer.sh`) を Windows 側の拡張ディレクトリから読むので、automount を
+無効にしたままでは接続できない。そのディレクトリだけを `/etc/fstab` に書いて通す。
+
+```
+# >>> ubuntu-setup: vscode-extensions >>>
+C:\Users\<Windowsユーザー>\.vscode\extensions /mnt/c/Users/<Windowsユーザー>/.vscode/extensions drvfs ro,uid=1000,gid=1000 0 0
+# <<< ubuntu-setup: vscode-extensions <<<
+```
+
+- バージョン付きの `ms-vscode-remote.remote-wsl-<ver>` ではなく親の `extensions` を
+  指すので、拡張が更新されても修正は要らない
+- `uid` / `gid` は実行ユーザーのもの (`id -u` / `id -g`)、ユーザー名に空白があれば
+  fstab の区切りと衝突しないよう `\040` に逃がす
+- マーカー行で囲んだブロックなので、何度流しても重複せず、ユーザー名を変えて
+  流し直せばその行だけ差し替わる
+
+マウント先のディレクトリもスクリプトが作る。automount がまだ生きている間は
+`/mnt/c` に drvfs が被っていて、その下に `mkdir` しても Windows 側に作られるだけで
+マウント先にはならないので、再帰しない bind mount で下地の `/mnt` を覗いて作る。
+
+反映は PowerShell で `wsl --shutdown` してから入り直したときから
+(「セットアップ後のメモ」にも出る)。接続は Windows 側の VS Code から張る
+— interop を切っているので、WSL の中から `code .` で開く使い方はできない。
 
 ### install-locale.sh
 
