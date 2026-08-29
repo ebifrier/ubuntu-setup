@@ -27,6 +27,7 @@ nvidia:install-nvidia.sh:NVIDIA ドライバ (GPU 付き LXC のみ)
 mise:install-mise.sh:mise + Node.js / pnpm
 claude:install-claude.sh:Claude Code
 rtk:install-rtk.sh:rtk (Claude Code のトークン削減プロキシ)
+codex:install-codex.sh:Codex CLI (OpenAI)
 claude-config:install-claude-config.sh:.claude 設定の配置
 '
 

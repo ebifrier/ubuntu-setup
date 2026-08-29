@@ -4,7 +4,7 @@ The setup file for ubuntu.
 ## 使い方
 
 ```sh
-./setup.sh                # 全部 (wsl -> locale -> packages -> dotfiles -> git -> gh -> awscli -> docker -> nvidia -> mise -> claude -> rtk -> claude-config)
+./setup.sh                # 全部 (wsl -> locale -> packages -> dotfiles -> git -> gh -> awscli -> docker -> nvidia -> mise -> claude -> rtk -> codex -> claude-config)
 ./setup.sh docker         # 特定のステップだけ
 ./setup.sh docker mise    # 複数指定も可 (指定した順に実行)
 ./setup.sh -h             # ステップ一覧
@@ -260,6 +260,23 @@ Claude Code からは `settings.json` の `PreToolUse` フック (`rtk hook clau
 に入っているので、rtk 単体で入れただけでは有効にならない。
 
 削減量は `rtk gain` で見られる。
+
+### install-codex.sh
+
+[Codex CLI](https://github.com/openai/codex) (OpenAI) を公式インストーラで
+`~/.local/bin/codex` に入れる。本体は `~/.codex/packages/standalone/` に置かれ、
+`~/.local/bin/codex` はそこへのリンク。
+
+```sh
+./install-codex.sh            # 最新版
+./install-codex.sh 0.150.1    # バージョン指定
+```
+
+インストーラは `~/.local/bin` が `PATH` に無いと `.bashrc` に自前のブロックを
+足すので、先に `ensure_local_bin` で通してから走らせている
+(`.bashrc` の PATH はこのリポジトリの `local-bin` ブロックに一本化する)。
+
+初回はログインが必要なので `codex` を起動してブラウザの指示に従う。
 
 ### install-claude-config.sh
 
