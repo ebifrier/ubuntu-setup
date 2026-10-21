@@ -1,0 +1,9 @@
+#!/bin/sh
+#
+# Claude Code が付ける co-author / 生成署名をコミットメッセージから消す。
+# settings.json の attribution を空にしても、モデルが自分で書くことがあるため。
+#
+sed -i -E \
+    -e '/^co-authored-by:.*noreply@anthropic\.com/Id' \
+    -e '/Generated with \[Claude Code\]/d' \
+    "$1"

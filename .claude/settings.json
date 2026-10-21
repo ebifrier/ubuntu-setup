@@ -25,6 +25,11 @@
             "type": "command",
             "command": "rtk hook claude",
             "timeout": 10
+          },
+          {
+            "type": "command",
+            "command": "bash $HOME/.claude/scripts/no-coauthor.sh",
+            "timeout": 10
           }
         ]
       }

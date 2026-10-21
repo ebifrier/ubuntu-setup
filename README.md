@@ -126,6 +126,15 @@ apt で以下を入れる。
 環境変数 `GIT_USER_NAME` / `GIT_USER_EMAIL` でも上書きできる。
 別人の環境に配るときはここを変える。
 
+あわせて `init.templateDir` を `~/.config/git/template` (中身は `config/git-template/`)
+に向け、Claude の `Co-Authored-By: ... <noreply@anthropic.com>` と
+`Generated with [Claude Code]` の行を消す `commit-msg` フックを配る。
+`settings.json` の `attribution` を空にしていても、モデルが自分で書くことがあるため。
+
+`core.hooksPath` と違って各リポジトリの `.git/hooks` (husky など) は生きたままだが、
+入るのは新しく clone / init したリポジトリだけ。既存のリポジトリはその中で
+`git init` を打つと (既存ファイルを壊さずに) フックがコピーされる。
+
 ### install-gh.sh
 
 GitHub CLI (`gh`) を公式 apt リポジトリ (cli.github.com) から入れる。
@@ -285,6 +294,10 @@ Claude Code からは `settings.json` の `PreToolUse` フック (`rtk hook clau
 
 `settings.json` には rtk の `PreToolUse` フック (`rtk hook claude`) の登録も
 入っているので、rtk 本体は `install-rtk.sh` で入れておく。
+
+もう一つの `PreToolUse` フック (`scripts/no-coauthor.sh`) は、`Co-Authored-By:` を
+含む `git commit` を止めて Claude に付け直させる (`git commit -F` でファイルから
+渡されたものは見えないので、`install-git.sh` の `commit-msg` フックと併用する)。
 
 ```sh
 ./install-claude-config.sh
