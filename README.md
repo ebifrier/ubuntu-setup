@@ -291,6 +291,9 @@ Claude Code からは `settings.json` の `PreToolUse` フック (`rtk hook clau
 
 `.claude/` 以下 (CLAUDE.md / settings.json / rules / skills / scripts) を
 `$HOME/.claude` に配置する。セッション履歴・キャッシュ・認証情報は含めていない。
+`skills/synced` (claude.ai のアカウントから同期されるスキル) は消さずに残す。
+`settings.json` は既存のものにリポジトリ側を重ねてマージする
+(キーが被ればリポジトリ側が勝ち、配列は丸ごと置き換わる)。
 
 `settings.json` には rtk の `PreToolUse` フック (`rtk hook claude`) の登録も
 入っているので、rtk 本体は `install-rtk.sh` で入れておく。

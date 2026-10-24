@@ -11,15 +11,35 @@ SCRIPT_DIR=$(cd "$(dirname "$0")" && pwd)
 SRC="$SCRIPT_DIR/.claude"
 DEST="$HOME/.claude"
 
+require_cmd jq
+
 mkdir -p "$DEST"
 
 # 設定ファイル。セッション履歴やキャッシュは持ち込まない。
-cp -f "$SRC/CLAUDE.md" "$SRC/RTK.md" "$SRC/settings.json" "$DEST/"
-for d in rules skills scripts; do
+cp -f "$SRC/CLAUDE.md" "$SRC/RTK.md" "$DEST/"
+
+# settings.json は claude 側でも書き足される (autoMode, modelSettings など) ので、
+# 既存のものにリポジトリ側を重ねる。キーが被ればリポジトリ側が勝つ。
+# 配列は要素ごとではなく丸ごと置き換わる。
+if [ -f "$DEST/settings.json" ]; then
+    _tmp="$DEST/settings.json.tmp"
+    jq -s '.[0] * .[1]' "$DEST/settings.json" "$SRC/settings.json" >"$_tmp" ||
+        { rm -f "$_tmp"; die "$DEST/settings.json をマージできなかった。"; }
+    mv -f "$_tmp" "$DEST/settings.json"
+else
+    cp -f "$SRC/settings.json" "$DEST/"
+fi
+for d in rules scripts; do
     # DEST が空でも / を消しに行かないように :? を噛ませる。
     rm -rf "${DEST:?}/$d"
     cp -rf "$SRC/$d" "$DEST/"
 done
+
+# skills/synced は claude.ai のアカウントから同期されるスキルなので残し、
+# それ以外を入れ替える。
+mkdir -p "$DEST/skills"
+find "${DEST:?}/skills" -mindepth 1 -maxdepth 1 ! -name synced -exec rm -rf {} +
+cp -rf "$SRC/skills/." "$DEST/skills/"
 chmod +x "$DEST/scripts/"*.sh
 
 # プラグイン (joseki など) と MCP サーバーは settings.json の
