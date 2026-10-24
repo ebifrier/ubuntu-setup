@@ -1,6 +1,10 @@
 #!/usr/bin/env bash
 # Claude Code statusline
-# 表示: モデル / コンテキスト % / 5時間使用率 % / 7日使用率 % / セッションコスト
+# 表示: モデル / コンテキスト % / 5時間使用率 % / 7日使用率 % / セッションコスト / ログイン中アカウント
+#
+# アカウント (メールアドレスのドメインとプラン) は statusline の JSON に含まれないので、
+# Claude Code のグローバル設定 (.claude.json) の oauthAccount から読む。
+# 仕事用 / 個人用でアカウントを切り替えて使うときの取り違え防止用。
 #
 # コンテキスト・5h・7d は公式 JSON フィールド。
 # ただし Fable 選択中の Usage(7d) は、全体週次枠ではなく Fable 専用の週次枠
@@ -80,6 +84,15 @@ EOF
   fi
 fi
 
+# ログイン中のアカウント (ドメインのみ)。CLAUDE_CONFIG_DIR 指定時はその直下の .claude.json を読む。
+# API キー利用などで oauthAccount が無いときは表示しない。
+CLAUDE_JSON="${CLAUDE_CONFIG_DIR:-$HOME}/.claude.json"
+ACCOUNT=$(jq -r '
+  .oauthAccount // empty
+  | select(.emailAddress)
+  | (.emailAddress | sub("^.*@"; "")) + ((.organizationType // "") | sub("^claude_"; "") | if . == "" then "" else " (\(.))" end)
+' "$CLAUDE_JSON" 2>/dev/null)
+
 # 表示整形
 COST_FMT=$(awk -v c="${COST:-0}"     'BEGIN{ printf "%.2f", c }')
 
@@ -93,6 +106,8 @@ CTX_FMT=$(fmt_pct "$CTX")
 FIVEH_FMT=$(fmt_pct "$FIVEH")
 SEVEND_FMT=$(fmt_pct "$SEVEND")
 
-printf '%s | Context: %s | Usage(5h): %s | Usage(7d): %s (%s) | Cost: %s$\n' \
+printf '%s | Context: %s | Usage(5h): %s | Usage(7d): %s (%s) | Cost: %s$' \
   "${MODEL:-Claude}" "$CTX_FMT" "$FIVEH_FMT" \
   "$SEVEND_FMT" "$LEFT7D" "$COST_FMT"
+[[ -n "$ACCOUNT" ]] && printf ' | %s' "$ACCOUNT"
+printf '\n'
