@@ -3,3 +3,4 @@ config/.emacs.d/recentf
 config/.emacs.d/auto-save-list
 
 *~
+*.pyc
