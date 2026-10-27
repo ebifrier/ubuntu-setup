@@ -4,7 +4,7 @@ The setup file for ubuntu.
 ## 使い方
 
 ```sh
-./setup.sh                # 全部 (wsl -> locale -> packages -> dotfiles -> git -> gh -> awscli -> docker -> nvidia -> mise -> claude -> rtk -> codex -> claude-config)
+./setup.sh                # 全部 (wsl -> locale -> packages -> dotfiles -> git -> gh -> awscli -> docker -> nvidia -> mise -> claude -> rtk -> codex -> codex-config -> claude-config)
 ./setup.sh docker         # 特定のステップだけ
 ./setup.sh docker mise    # 複数指定も可 (指定した順に実行)
 ./setup.sh -h             # ステップ一覧
@@ -256,7 +256,7 @@ Claude Code を公式のネイティブインストーラで入れる。
 
 [rtk](https://github.com/rtk-ai/rtk) (Rust Token Killer) を公式インストーラで
 `~/.local/bin/rtk` に入れる。`git status` のような bash コマンドの出力を
-圧縮して Claude Code に渡し、トークン消費を減らすプロキシ。
+圧縮して Claude Code / Codex に渡し、トークン消費を減らすプロキシ。
 
 ```sh
 ./install-rtk.sh          # 最新版
@@ -267,6 +267,10 @@ Claude Code からは `settings.json` の `PreToolUse` フック (`rtk hook clau
 が `git status` -> `rtk git status` のように書き換える。フックは rtk 本体の
 サブコマンドで、登録は `install-claude-config.sh` が配置する `settings.json`
 に入っているので、rtk 単体で入れただけでは有効にならない。
+
+Codex では `install-codex-config.sh` が `rtk init --codex --global` を実行して
+`AGENTS.md` / `RTK.md` を配置する。コマンドに `rtk` を付けるよう共通指示で
+指定する方式で、Claude のようなフックによる強制的な書き換えではない。
 
 削減量は `rtk gain` で見られる。
 
@@ -292,6 +296,39 @@ Ubuntu 24.04 以降は AppArmor が非特権の user namespace を制限して�
 `apparmor_parser` が無い環境 (WSL や LXC など) ではこの手順は飛ばす。
 
 初回はログインが必要なので `codex` を起動してブラウザの指示に従う。
+
+### install-codex-config.sh
+
+`$USER` のアカウント情報 (`getent passwd "$USER"`) からホームディレクトリを
+取得して、`<ホーム>/.codex/config.toml` を生成・更新する。
+ユーザー名や `/home` は固定しない。`CODEX_HOME` が設定されている場合は
+その絶対パスを設定先に使う。通常の開発ユーザーで実行する。
+
+```sh
+./setup.sh codex-config
+# 本体から入れる場合
+./setup.sh rtk codex codex-config
+```
+
+設定内容は次のとおり。
+
+- `sandbox_mode = "workspace-write"`: 作業ディレクトリ内の書き込みを許可
+- `approval_policy = "on-request"`: サンドボックス外の操作は必要に応じて承認を要求
+- `sandbox_workspace_write.network_access = true`: 外部ネットワークへの接続を許可
+- `sandbox_workspace_write.writable_roots`: 対象ユーザーの `.local` と `.cache` を追加
+
+既存のモデル・MCP・プラグイン設定やコメントは保持し、上記の管理対象キーだけを
+更新する。既存の `writable_roots` も残し、追加パスは重複させない。
+変更前の設定は初回だけ `config.toml.bak` に退避する。
+TOML の処理には apt の `python3-tomlkit` を使い、無い場合は自動で入れる。
+不正な TOML は書き換えずに停止する。
+
+RTK 本体は先に `install-rtk.sh` で入れておく。
+`rtk init --codex --global` で同じ設定先に共通指示を配置し、既存の `AGENTS.md`
+に指示を追加する。反映は次回の Codex 起動から。
+空でない `AGENTS.override.md` がある場合は、初回の内容を `.bak` に残して
+そちらにも RTK の参照を追加する。
+管理ポリシーで制限されている権限はこの設定では拡張できない。
 
 ### install-claude-config.sh
 

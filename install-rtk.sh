@@ -9,6 +9,7 @@
 # Claude Code からは .claude/settings.json の PreToolUse フック
 # (rtk 本体の `rtk hook claude`) 経由で呼ばれる。登録は
 # install-claude-config.sh が配置する settings.json に入っている。
+# Codex では install-codex-config.sh が AGENTS.md / RTK.md を初期化する。
 #
 set -e
 
@@ -31,4 +32,4 @@ ensure_local_bin
 
 "$LOCAL_BIN/rtk" --version
 
-note "rtk のフックは claude の再起動から有効。'rtk gain' で削減量を見られる。"
+note "rtk の連携設定は claude-config / codex-config で配置する。各エージェントの再起動から有効。'rtk gain' で削減量を見られる。"
