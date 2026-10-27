@@ -15,6 +15,7 @@ def configure(codex_dir: Path, user_home: Path) -> None:
     config = tomlkit.parse(original)
     config["sandbox_mode"] = "workspace-write"
     config["approval_policy"] = "on-request"
+    config["approvals_reviewer"] = "auto_review"
 
     if "sandbox_workspace_write" not in config:
         config["sandbox_workspace_write"] = tomlkit.table()

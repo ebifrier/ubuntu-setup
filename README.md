@@ -313,7 +313,8 @@ Ubuntu 24.04 以降は AppArmor が非特権の user namespace を制限して�
 設定内容は次のとおり。
 
 - `sandbox_mode = "workspace-write"`: 作業ディレクトリ内の書き込みを許可
-- `approval_policy = "on-request"`: サンドボックス外の操作は必要に応じて承認を要求
+- `approval_policy = "on-request"`: サンドボックス外の操作を承認の対象にする
+- `approvals_reviewer = "auto_review"`: 対象の承認を自動レビューに回し、手動確認を減らす (Approve for me)
 - `sandbox_workspace_write.network_access = true`: 外部ネットワークへの接続を許可
 - `sandbox_workspace_write.writable_roots`: 対象ユーザーの `.local` と `.cache` を追加
 
@@ -329,6 +330,8 @@ RTK 本体は先に `install-rtk.sh` で入れておく。
 空でない `AGENTS.override.md` がある場合は、初回の内容を `.bak` に残して
 そちらにも RTK の参照を追加する。
 管理ポリシーで制限されている権限はこの設定では拡張できない。
+自動レビューは対応する Codex で利用できる。sudo のパスワード認証は別途必要なので、
+依存パッケージの導入時は通常のターミナルで実行する。
 
 ### install-claude-config.sh
 

@@ -32,6 +32,7 @@ class CodexConfigTests(unittest.TestCase):
         data = tomlkit.parse(first.decode())
         self.assertEqual(data["sandbox_mode"], "workspace-write")
         self.assertEqual(data["approval_policy"], "on-request")
+        self.assertEqual(data["approvals_reviewer"], "auto_review")
         self.assertTrue(data["sandbox_workspace_write"]["network_access"])
         self.assertEqual(data["sandbox_workspace_write"]["writable_roots"], [
             str(self.home / ".local"), str(self.home / ".cache"),
@@ -44,6 +45,7 @@ class CodexConfigTests(unittest.TestCase):
         original = '''# personal settings
 model = "custom-model"
 approval_policy = "never"
+approvals_reviewer = "user"
 [mcp_servers.example]
 command = "example"
 [sandbox_workspace_write]
@@ -57,6 +59,7 @@ writable_roots = [
         updated = self.config.read_text()
         data = tomlkit.parse(updated)
         self.assertEqual(data["model"], "custom-model")
+        self.assertEqual(data["approvals_reviewer"], "auto_review")
         self.assertEqual(data["mcp_servers"]["example"]["command"], "example")
         self.assertIn("# personal settings", updated)
         self.assertIn("# custom root", updated)
