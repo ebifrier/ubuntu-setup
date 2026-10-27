@@ -285,6 +285,12 @@ Claude Code からは `settings.json` の `PreToolUse` フック (`rtk hook clau
 足すので、先に `ensure_local_bin` で通してから走らせている
 (`.bashrc` の PATH はこのリポジトリの `local-bin` ブロックに一本化する)。
 
+Linux 版のサンドボックスは bubblewrap を使うので、`bubblewrap` を apt で入れ、
+`/etc/apparmor.d/bwrap-userns-restrict` を `apparmor_parser -r` で読み込み直す。
+Ubuntu 24.04 以降は AppArmor が非特権の user namespace を制限しており、
+このプロファイルが効いていないと bwrap が失敗する。プロファイルか
+`apparmor_parser` が無い環境 (WSL や LXC など) ではこの手順は飛ばす。
+
 初回はログインが必要なので `codex` を起動してブラウザの指示に従う。
 
 ### install-claude-config.sh

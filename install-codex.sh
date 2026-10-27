@@ -18,6 +18,19 @@ RELEASE=${1:-latest}
 
 require_cmd curl
 
+# Linux 版のサンドボックスは bubblewrap (bwrap) で切る。
+# Ubuntu 24.04 以降は AppArmor が非特権の user namespace を止めているので、
+# apparmor パッケージ同梱の bwrap 用プロファイルを読み込み直して bwrap にだけ許す
+# (bwrap を後から入れた場合、読み込み直さないとプロファイルが効いていない)。
+# AppArmor の無い環境 (WSL や LXC など) では飛ばす。
+apt_install bubblewrap
+
+BWRAP_PROFILE=/etc/apparmor.d/bwrap-userns-restrict
+if [ -f "$BWRAP_PROFILE" ] && command -v apparmor_parser >/dev/null 2>&1; then
+    sudo apparmor_parser -r "$BWRAP_PROFILE" ||
+        warn "$BWRAP_PROFILE の読み込みに失敗した。codex のサンドボックスが動かないかもしれない。"
+fi
+
 # ~/.local/bin を PATH に通す (lib/common.sh)。
 # 先にこのプロセスの PATH にも入れておくと、公式インストーラが
 # 自前の PATH ブロックを .bashrc に足さずに済む。
