@@ -4,13 +4,13 @@
 # バイナリは ~/.codex/packages/standalone/ に置かれ、
 # ~/.local/bin/codex から起動する。
 #
-#   ./install-codex.sh            # 最新版
-#   ./install-codex.sh 0.150.1    # バージョン指定
+#   install/install-codex.sh            # 最新版
+#   install/install-codex.sh 0.150.1    # バージョン指定
 #
 set -e
 
-SCRIPT_DIR=$(cd "$(dirname "$0")" && pwd)
-. "$SCRIPT_DIR/lib/common.sh"
+ROOT_DIR=$(cd "$(dirname "$0")/.." && pwd)
+. "$ROOT_DIR/lib/common.sh"
 
 INSTALL_URL="https://releases.openai.com/codex/install.sh"
 LOCAL_BIN="$HOME/.local/bin"

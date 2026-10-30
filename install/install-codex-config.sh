@@ -1,12 +1,12 @@
 #!/bin/sh
 #
-# $USER の Codex 開発用設定と RTK の共通指示を配置する。
+# $USER の Codex 開発用設定・RTK の共通指示・agent-skills を配置する。
 # codex / rtk 本体は install-codex.sh / install-rtk.sh で入れておくこと。
 #
 set -e
 
-SCRIPT_DIR=$(cd "$(dirname "$0")" && pwd)
-. "$SCRIPT_DIR/lib/common.sh"
+ROOT_DIR=$(cd "$(dirname "$0")/.." && pwd)
+. "$ROOT_DIR/lib/common.sh"
 
 require_cmd getent
 [ -n "${USER:-}" ] || die 'USER が未設定。設定先のユーザーを指定する。'
@@ -32,7 +32,17 @@ if ! /usr/bin/python3 -c 'import tomlkit' >/dev/null 2>&1; then
     apt_install python3 python3-tomlkit
 fi
 
-/usr/bin/python3 "$SCRIPT_DIR/lib/codex-config.py" "$CODEX_DIR" "$USER_HOME"
+/usr/bin/python3 "$ROOT_DIR/lib/codex-config.py" "$CODEX_DIR" "$USER_HOME"
+
+# Claude と共通の skill を Codex のユーザースキル置き場に入れる。
+# 利用者が自分で置いた skill は残し、リポジトリにある名前のものだけ入れ替える。
+SKILLS_DIR="$USER_HOME/.agents/skills"
+mkdir -p "$SKILLS_DIR"
+for _skill in "$ROOT_DIR"/agent-skills/*/; do
+    _name=$(basename "$_skill")
+    rm -rf "${SKILLS_DIR:?}/$_name"
+    cp -rf "$_skill" "$SKILLS_DIR/$_name"
+done
 
 # Codex 用は AGENTS.md + RTK.md。Claude 用フックには触れない。
 # RTK のグローバル初期化にも同じユーザーと CODEX_HOME を渡す。

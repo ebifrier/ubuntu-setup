@@ -3,8 +3,8 @@
 # rtk (Rust Token Killer) を公式インストーラで入れる。
 # バイナリは ~/.local/bin/rtk に置かれる。
 #
-#   ./install-rtk.sh          # 最新版
-#   ./install-rtk.sh v0.28.2  # バージョン指定
+#   install/install-rtk.sh          # 最新版
+#   install/install-rtk.sh v0.28.2  # バージョン指定
 #
 # Claude Code からは .claude/settings.json の PreToolUse フック
 # (rtk 本体の `rtk hook claude`) 経由で呼ばれる。登録は
@@ -13,8 +13,8 @@
 #
 set -e
 
-SCRIPT_DIR=$(cd "$(dirname "$0")" && pwd)
-. "$SCRIPT_DIR/lib/common.sh"
+ROOT_DIR=$(cd "$(dirname "$0")/.." && pwd)
+. "$ROOT_DIR/lib/common.sh"
 
 INSTALL_URL="https://raw.githubusercontent.com/rtk-ai/rtk/refs/heads/master/install.sh"
 LOCAL_BIN="$HOME/.local/bin"

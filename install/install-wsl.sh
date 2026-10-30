@@ -2,8 +2,8 @@
 #
 # WSL2 の Ubuntu 向けの設定。
 #
-#   ./install-wsl.sh                    # Windows ユーザー名は自動で拾う
-#   ./install-wsl.sh <Windowsユーザー>  # 拾えないときは手で渡す
+#   install/install-wsl.sh                    # Windows ユーザー名は自動で拾う
+#   install/install-wsl.sh <Windowsユーザー>  # 拾えないときは手で渡す
 #
 # やること:
 #
@@ -19,8 +19,8 @@
 #
 set -e
 
-SCRIPT_DIR=$(cd "$(dirname "$0")" && pwd)
-. "$SCRIPT_DIR/lib/common.sh"
+ROOT_DIR=$(cd "$(dirname "$0")/.." && pwd)
+. "$ROOT_DIR/lib/common.sh"
 
 WSL_CONF=/etc/wsl.conf
 FSTAB=/etc/fstab
@@ -190,7 +190,7 @@ ensure_mount_point() {
     else
         rmdir "$_tmp"
         warn "$MOUNT_POINT を作れなかった (/mnt/c に drvfs が被っている)。"
-        note "wsl --shutdown で入り直したあと、もう一度 ./install-wsl.sh を実行する。"
+        note "wsl --shutdown で入り直したあと、もう一度 install/install-wsl.sh を実行する。"
     fi
 }
 
@@ -205,7 +205,7 @@ WIN_USER=${1:-${WIN_USER:-}}
 [ -n "$WIN_USER" ] || WIN_USER=$(win_user_from_interop)
 [ -n "$WIN_USER" ] || WIN_USER=$(win_user_from_users_dir)
 [ -n "$WIN_USER" ] ||
-    die "Windows のユーザー名が分からない。./install-wsl.sh <Windowsユーザー> で渡す。"
+    die "Windows のユーザー名が分からない。install/install-wsl.sh <Windowsユーザー> で渡す。"
 
 WIN_PATH="C:\\Users\\$WIN_USER\\.vscode\\extensions"
 MOUNT_POINT="/mnt/c/Users/$WIN_USER/.vscode/extensions"

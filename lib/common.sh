@@ -2,8 +2,8 @@
 #
 # 各インストールスクリプトから読み込む共通処理。
 #
-#   SCRIPT_DIR=$(cd "$(dirname "$0")" && pwd)
-#   . "$SCRIPT_DIR/lib/common.sh"
+#   ROOT_DIR=$(cd "$(dirname "$0")/.." && pwd)
+#   . "$ROOT_DIR/lib/common.sh"
 #
 # 単体で実行するものではない。
 #

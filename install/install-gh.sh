@@ -3,14 +3,14 @@
 # GitHub CLI (gh) を公式 apt リポジトリから入れる。
 # Ubuntu 同梱の gh は版が古いので、こちらを使う。
 #
-#   ./install-gh.sh
+#   install/install-gh.sh
 #
 # 認証は入れたあとに `gh auth login` を手で通す。
 #
 set -e
 
-SCRIPT_DIR=$(cd "$(dirname "$0")" && pwd)
-. "$SCRIPT_DIR/lib/common.sh"
+ROOT_DIR=$(cd "$(dirname "$0")/.." && pwd)
+. "$ROOT_DIR/lib/common.sh"
 
 apt_install ca-certificates curl
 

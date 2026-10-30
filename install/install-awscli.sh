@@ -3,16 +3,16 @@
 # AWS CLI v2 を公式の zip インストーラで入れる。
 # Ubuntu 同梱の awscli は v1 で版も古いので、こちらを使う。
 #
-#   ./install-awscli.sh           # 最新版
-#   ./install-awscli.sh 2.27.54   # バージョン指定
+#   install/install-awscli.sh           # 最新版
+#   install/install-awscli.sh 2.27.54   # バージョン指定
 #
 # /usr/local/aws-cli に入り、/usr/local/bin/aws から辿れるようになる。
 # 認証情報は入れたあとに `aws configure` を手で通す。
 #
 set -e
 
-SCRIPT_DIR=$(cd "$(dirname "$0")" && pwd)
-. "$SCRIPT_DIR/lib/common.sh"
+ROOT_DIR=$(cd "$(dirname "$0")/.." && pwd)
+. "$ROOT_DIR/lib/common.sh"
 
 INSTALL_DIR=/usr/local/aws-cli
 BIN_DIR=/usr/local/bin

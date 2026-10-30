@@ -2,13 +2,13 @@
 #
 # 日本語ロケール (ja_JP.UTF-8) を生成して既定にし、タイムゾーンを設定する。
 #
-#   ./install-locale.sh                          # ja_JP.UTF-8 / Asia/Tokyo
-#   ./install-locale.sh en_US.UTF-8 Asia/Tokyo   # ロケールとタイムゾーンを指定
+#   install/install-locale.sh                          # ja_JP.UTF-8 / Asia/Tokyo
+#   install/install-locale.sh en_US.UTF-8 Asia/Tokyo   # ロケールとタイムゾーンを指定
 #
 set -e
 
-SCRIPT_DIR=$(cd "$(dirname "$0")" && pwd)
-. "$SCRIPT_DIR/lib/common.sh"
+ROOT_DIR=$(cd "$(dirname "$0")/.." && pwd)
+. "$ROOT_DIR/lib/common.sh"
 
 LOCALE=${1:-ja_JP.UTF-8}
 TIMEZONE=${2:-Asia/Tokyo}

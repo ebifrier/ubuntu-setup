@@ -2,8 +2,8 @@
 #
 # LXC コンテナの中に NVIDIA ドライバの userspace だけを入れる。
 #
-#   ./install-nvidia.sh              # ホストのドライバ版に自動で合わせる
-#   ./install-nvidia.sh 580.82.07    # バージョン指定
+#   install/install-nvidia.sh              # ホストのドライバ版に自動で合わせる
+#   install/install-nvidia.sh 580.82.07    # バージョン指定
 #
 # コンテナはホストとカーネルを共有するので、カーネルモジュールはホスト側に
 # 入っているものをそのまま使う。ここで入れるのは libcuda / nvidia-smi などの
@@ -24,8 +24,8 @@
 #
 set -e
 
-SCRIPT_DIR=$(cd "$(dirname "$0")" && pwd)
-. "$SCRIPT_DIR/lib/common.sh"
+ROOT_DIR=$(cd "$(dirname "$0")/.." && pwd)
+. "$ROOT_DIR/lib/common.sh"
 
 DOWNLOAD_BASE=https://download.nvidia.com/XFree86/Linux-x86_64
 

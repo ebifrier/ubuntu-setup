@@ -4,8 +4,8 @@
 #
 set -e
 
-SCRIPT_DIR=$(cd "$(dirname "$0")" && pwd)
-. "$SCRIPT_DIR/lib/common.sh"
+ROOT_DIR=$(cd "$(dirname "$0")/.." && pwd)
+. "$ROOT_DIR/lib/common.sh"
 
 # 基本セット
 PACKAGES_BASE="tmux git curl wget build-essential ca-certificates"

@@ -54,7 +54,7 @@ step_script() {
 run_step() {
     _script=$(step_script "$1")
     [ -n "$_script" ] || { warn "unknown step: $1"; usage; exit 1; }
-    "$SCRIPT_DIR/$_script" </dev/null
+    "$SCRIPT_DIR/install/$_script" </dev/null
 }
 
 run_all() {

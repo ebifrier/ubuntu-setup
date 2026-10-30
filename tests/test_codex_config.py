@@ -37,6 +37,9 @@ class CodexConfigTests(unittest.TestCase):
         self.assertEqual(data["sandbox_workspace_write"]["writable_roots"], [
             str(self.home / ".local"), str(self.home / ".cache"),
         ])
+        self.assertEqual(data["mcp_servers"]["context7"]["command"], "npx")
+        self.assertEqual(data["mcp_servers"]["context7"]["args"],
+                         ["-y", "@upstash/context7-mcp"])
         MODULE.configure(self.codex, self.home)
         self.assertEqual(self.config.read_bytes(), first)
         self.assertFalse((self.codex / "config.toml.bak").exists())
@@ -48,6 +51,9 @@ approval_policy = "never"
 approvals_reviewer = "user"
 [mcp_servers.example]
 command = "example"
+[mcp_servers.context7]
+command = "old-context7"
+env = { "CONTEXT7_API_KEY" = "secret" }
 [sandbox_workspace_write]
 network_access = false
 writable_roots = [
@@ -61,6 +67,8 @@ writable_roots = [
         self.assertEqual(data["model"], "custom-model")
         self.assertEqual(data["approvals_reviewer"], "auto_review")
         self.assertEqual(data["mcp_servers"]["example"]["command"], "example")
+        self.assertEqual(data["mcp_servers"]["context7"]["command"], "npx")
+        self.assertEqual(data["mcp_servers"]["context7"]["env"]["CONTEXT7_API_KEY"], "secret")
         self.assertIn("# personal settings", updated)
         self.assertIn("# custom root", updated)
         self.assertIn("/srv/dev", data["sandbox_workspace_write"]["writable_roots"])
@@ -91,6 +99,11 @@ writable_roots = [
             path.chmod(0o755)
         override = self.codex / "AGENTS.override.md"
         override.write_text("Keep my instructions.\n")
+        skills = self.home / ".agents/skills"
+        (skills / "my-own-skill").mkdir(parents=True)
+        (skills / "my-own-skill/SKILL.md").write_text("mine\n")
+        (skills / "git-workflow").mkdir()
+        (skills / "git-workflow/stale.md").write_text("old\n")
         env = dict(os.environ, USER="alice", HOME=str(self.base / "wrong-home"),
                    CODEX_HOME=str(self.codex), TEST_USER_HOME=str(self.home),
                    TEST_CODEX_DIR=str(self.codex), PATH=f"{binaries}:/usr/bin:/bin")
@@ -105,6 +118,11 @@ writable_roots = [
         roots = tomlkit.parse(self.config.read_text())["sandbox_workspace_write"]["writable_roots"]
         self.assertIn(str(self.home / ".local"), roots)
         self.assertFalse((self.base / "wrong-home").exists())
+        for skill in (ROOT / "agent-skills").iterdir():
+            self.assertEqual((skills / skill.name / "SKILL.md").read_text(),
+                             (skill / "SKILL.md").read_text())
+        self.assertEqual((skills / "my-own-skill/SKILL.md").read_text(), "mine\n")
+        self.assertFalse((skills / "git-workflow/stale.md").exists())
 
 
 if __name__ == "__main__":

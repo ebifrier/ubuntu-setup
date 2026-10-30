@@ -4,12 +4,12 @@
 # docker compose (plugin) と buildx も一緒に入る。
 # 実行ユーザーを docker グループに入れるので、sudo 無しで docker が使える。
 #
-#   ./install-docker.sh
+#   install/install-docker.sh
 #
 set -e
 
-SCRIPT_DIR=$(cd "$(dirname "$0")" && pwd)
-. "$SCRIPT_DIR/lib/common.sh"
+ROOT_DIR=$(cd "$(dirname "$0")/.." && pwd)
+. "$ROOT_DIR/lib/common.sh"
 
 # Ubuntu 同梱の docker.io / podman-docker とは競合するので外しておく。
 for pkg in docker.io docker-doc docker-compose docker-compose-v2 podman-docker containerd runc; do

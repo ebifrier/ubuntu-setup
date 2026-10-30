@@ -10,10 +10,10 @@
 #
 set -e
 
-SCRIPT_DIR=$(cd "$(dirname "$0")" && pwd)
-. "$SCRIPT_DIR/lib/common.sh"
+ROOT_DIR=$(cd "$(dirname "$0")/.." && pwd)
+. "$ROOT_DIR/lib/common.sh"
 
-CONFIG_DIR="$SCRIPT_DIR/config"
+CONFIG_DIR="$ROOT_DIR/config"
 
 # 中途半端に混ざると困るので、毎回消してから入れ直すもの。
 RECREATE=".emacs.d"
@@ -29,5 +29,5 @@ for _src in "$CONFIG_DIR"/.[!.]*; do
     log "$HOME/$(basename "$_src") を配置した。"
 done
 
-sudo cp -f "$SCRIPT_DIR/bin/ec" /usr/local/bin/
+sudo cp -f "$ROOT_DIR/bin/ec" /usr/local/bin/
 sudo chmod +x /usr/local/bin/ec

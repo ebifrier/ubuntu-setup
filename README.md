@@ -12,7 +12,7 @@ The setup file for ubuntu.
 
 ステップの定義は `setup.sh` 冒頭の `STEPS` 1箇所にまとまっている
 (名前 / スクリプト / 説明)。ステップを足すときはここに1行足して
-`install-<名前>.sh` を置く。`all` の実行順もこの並び。
+`install/install-<名前>.sh` を置く。`all` の実行順もこの並び。
 
 「次のログインから有効」のような注意書きは各スクリプトが `note` で登録し、
 `setup.sh` の最後に「セットアップ後のメモ」としてまとめて出る。
@@ -24,8 +24,8 @@ WSL2 の Ubuntu 向けの設定。`/etc/wsl.conf` で Windows 側のドライブ
 `/etc/fstab` で read-only マウントして通す。
 
 ```sh
-./install-wsl.sh              # Windows ユーザー名は自動で拾う
-./install-wsl.sh igoshogi     # 拾えないときは手で渡す
+install/install-wsl.sh              # Windows ユーザー名は自動で拾う
+install/install-wsl.sh igoshogi     # 拾えないときは手で渡す
 ```
 
 WSL でなければ何もせずに終わるので、`all` に入れっぱなしで害はない。
@@ -89,8 +89,8 @@ C:\Users\<Windowsユーザー>\.vscode\extensions /mnt/c/Users/<Windowsユーザ
 (`locale-gen` が無ければ `locales` パッケージを入れてから実行する)。
 
 ```sh
-./install-locale.sh                # ja_JP.UTF-8
-./install-locale.sh en_US.UTF-8    # ロケール指定
+install/install-locale.sh                # ja_JP.UTF-8
+install/install-locale.sh en_US.UTF-8    # ロケール指定
 ```
 
 反映は次のログインから。今のシェルで使うなら `export LANG=ja_JP.UTF-8`。
@@ -119,8 +119,8 @@ apt で以下を入れる。
 `git config --global` で `user.name` / `user.email` を設定する。
 
 ```sh
-./install-git.sh                            # ebifrier <ebifrier@gmail.com>
-./install-git.sh someone foo@example.com    # 名前とメールを指定
+install/install-git.sh                            # ebifrier <ebifrier@gmail.com>
+install/install-git.sh someone foo@example.com    # 名前とメールを指定
 ```
 
 環境変数 `GIT_USER_NAME` / `GIT_USER_EMAIL` でも上書きできる。
@@ -141,7 +141,7 @@ GitHub CLI (`gh`) を公式 apt リポジトリ (cli.github.com) から入れる
 Ubuntu 同梱の `gh` は版が古いので使わない。
 
 ```sh
-./install-gh.sh
+install/install-gh.sh
 ```
 
 認証はしないので、使う前に `gh auth login` を手で通す
@@ -153,8 +153,8 @@ AWS CLI v2 を公式の zip インストーラ (awscli.amazonaws.com) から入�
 Ubuntu 同梱の `awscli` は v1 で版も古いので使わない。
 
 ```sh
-./install-awscli.sh           # 最新版
-./install-awscli.sh 2.27.54   # バージョン指定
+install/install-awscli.sh           # 最新版
+install/install-awscli.sh 2.27.54   # バージョン指定
 ```
 
 `/usr/local/aws-cli` に入り、`/usr/local/bin/aws` から辿れる。
@@ -170,7 +170,7 @@ Docker Engine を公式 apt リポジトリ (download.docker.com) から入れ�
 Ubuntu 同梱の `docker.io` / `docker-compose` / `podman-docker` は競合するので先に外す。
 
 ```sh
-./install-docker.sh
+install/install-docker.sh
 ```
 
 実行ユーザーを `docker` グループに入れるので、再ログイン後は `sudo` 無しで使える
@@ -181,8 +181,8 @@ Ubuntu 同梱の `docker.io` / `docker-compose` / `podman-docker` は競合す�
 GPU を渡した LXC コンテナの中に、NVIDIA ドライバの **userspace だけ**を入れる。
 
 ```sh
-./install-nvidia.sh              # ホストのドライバ版に自動で合わせる
-./install-nvidia.sh 580.82.07    # バージョン指定
+install/install-nvidia.sh              # ホストのドライバ版に自動で合わせる
+install/install-nvidia.sh 580.82.07    # バージョン指定
 ```
 
 コンテナはホストとカーネルを共有するので、カーネルモジュールはホスト側のものを
@@ -218,8 +218,8 @@ CUDA toolkit や PyTorch はプロジェクトごとに入れる前提で、こ�
 入れるものは `config/mise.toml` (配置先は `~/.config/mise/config.toml`) で決まる。
 
 ```sh
-./install-mise.sh        # mise + config/mise.toml のツール一式
-./install-mise.sh none   # mise 本体だけ (ツールは入れない)
+install/install-mise.sh        # mise + config/mise.toml のツール一式
+install/install-mise.sh none   # mise 本体だけ (ツールは入れない)
 ```
 
 ```toml
@@ -245,9 +245,9 @@ Claude Code を公式のネイティブインストーラで入れる。
 (`~/.local/bin` への PATH を `.bashrc` に追記する)。ネイティブ版は自動更新される。
 
 ```sh
-./install-claude.sh           # latest チャンネル
-./install-claude.sh stable    # stable チャンネル (約1週間遅れ)
-./install-claude.sh 2.1.89    # バージョン指定
+install/install-claude.sh           # latest チャンネル
+install/install-claude.sh stable    # stable チャンネル (約1週間遅れ)
+install/install-claude.sh 2.1.89    # バージョン指定
 ```
 
 初回はログインが必要なので `claude` を起動してブラウザの指示に従う。
@@ -259,8 +259,8 @@ Claude Code を公式のネイティブインストーラで入れる。
 圧縮して Claude Code / Codex に渡し、トークン消費を減らすプロキシ。
 
 ```sh
-./install-rtk.sh          # 最新版
-./install-rtk.sh v0.28.2  # バージョン指定
+install/install-rtk.sh          # 最新版
+install/install-rtk.sh v0.28.2  # バージョン指定
 ```
 
 Claude Code からは `settings.json` の `PreToolUse` フック (`rtk hook claude`)
@@ -281,8 +281,8 @@ Codex では `install-codex-config.sh` が `rtk init --codex --global` を実行
 `~/.local/bin/codex` はそこへのリンク。
 
 ```sh
-./install-codex.sh            # 最新版
-./install-codex.sh 0.150.1    # バージョン指定
+install/install-codex.sh            # 最新版
+install/install-codex.sh 0.150.1    # バージョン指定
 ```
 
 インストーラは `~/.local/bin` が `PATH` に無いと `.bashrc` に自前のブロックを
@@ -317,6 +317,8 @@ Ubuntu 24.04 以降は AppArmor が非特権の user namespace を制限して�
 - `approvals_reviewer = "auto_review"`: 対象の承認を自動レビューに回し、手動確認を減らす (Approve for me)
 - `sandbox_workspace_write.network_access = true`: 外部ネットワークへの接続を許可
 - `sandbox_workspace_write.writable_roots`: 対象ユーザーの `.local` と `.cache` を追加
+- `mcp_servers.context7`: context7 MCP を `npx -y @upstash/context7-mcp` で起動する
+  (`env` など自分で足したキーは残す)
 
 既存のモデル・MCP・プラグイン設定やコメントは保持し、上記の管理対象キーだけを
 更新する。既存の `writable_roots` も残し、追加パスは重複させない。
@@ -329,14 +331,17 @@ RTK 本体は先に `install-rtk.sh` で入れておく。
 に指示を追加する。反映は次回の Codex 起動から。
 空でない `AGENTS.override.md` がある場合は、初回の内容を `.bak` に残して
 そちらにも RTK の参照を追加する。
+
+`agent-skills/` の skill を `<ホーム>/.agents/skills` (Codex のユーザースキル置き場) に
+コピーする。自分で置いた skill は残し、リポジトリにある名前のものだけ入れ替える。
 管理ポリシーで制限されている権限はこの設定では拡張できない。
 自動レビューは対応する Codex で利用できる。sudo のパスワード認証は別途必要なので、
 依存パッケージの導入時は通常のターミナルで実行する。
 
 ### install-claude-config.sh
 
-`.claude/` 以下 (CLAUDE.md / settings.json / rules / skills / scripts) を
-`$HOME/.claude` に配置する。セッション履歴・キャッシュ・認証情報は含めていない。
+`.claude/` 以下 (CLAUDE.md / settings.json / rules / skills / scripts) と
+`agent-skills/` を `$HOME/.claude` に配置する。セッション履歴・キャッシュ・認証情報は含めていない。
 `skills/synced` (claude.ai のアカウントから同期されるスキル) は消さずに残す。
 `settings.json` は既存のものにリポジトリ側を重ねてマージする
 (キーが被ればリポジトリ側が勝ち、配列は丸ごと置き換わる)。
@@ -349,22 +354,26 @@ RTK 本体は先に `install-rtk.sh` で入れておく。
 渡されたものは見えないので、`install-git.sh` の `commit-msg` フックと併用する)。
 
 ```sh
-./install-claude-config.sh
+install/install-claude-config.sh
 ```
 
-プラグイン (joseki, claude-plugins-official) と context7 / playwright の MCP サーバーは
-`settings.json` の `enabledPlugins` / `extraKnownMarketplaces` を見て
-claude 起動時に自動で取得される。
+プラグイン (claude-plugins-official) は `settings.json` の
+`enabledPlugins` / `extraKnownMarketplaces` を見て claude 起動時に自動で取得される。
+context7 MCP は `claude mcp add --scope user` で登録する (登録済みなら何もしない)。
 context7 の API キーが要るときは `settings.json` の `env` に足す
 (キー自体はリポジトリに置かないこと)。
+
+以前使っていた joseki プラグインは廃止した。必要な skill は `agent-skills/` と
+`.claude/skills/` に移してある。このスクリプトは joseki が残っていれば
+アンインストールし、マーケットプレイスの登録と `settings.json` の項目も消す。
 
 ### lib/common.sh
 
 各スクリプトから読み込む共通処理。単体では実行しない。
 
 ```sh
-SCRIPT_DIR=$(cd "$(dirname "$0")" && pwd)
-. "$SCRIPT_DIR/lib/common.sh"
+ROOT_DIR=$(cd "$(dirname "$0")/.." && pwd)
+. "$ROOT_DIR/lib/common.sh"
 ```
 
 - `log` / `warn` / `die` — メッセージ出力。`die` は終了コード 1 で止まる
@@ -409,13 +418,15 @@ export PATH="$HOME/.local/share/mise/shims:$PATH"
 
 ```
 setup.sh              # 入口。ステップの定義 (STEPS) もここ
-install-*.sh          # ステップごとの本体
+install/install-*.sh  # ステップごとの本体
 lib/common.sh         # 共通処理 (メッセージ / apt / .bashrc)
 bin/                  # $PATH に入れるスクリプト (ec)
 config/               # 配置するもの
   .emacs .emacs.d .screenrc .tmux.conf   # -> $HOME
   mise.toml                              # -> ~/.config/mise/config.toml
 .claude/              # -> ~/.claude (このリポジトリ自身の設定も兼ねる)
+  skills/                                # Claude 専用の skill (codex-review)
+agent-skills/         # Claude / Codex 共通の skill -> ~/.claude/skills, ~/.agents/skills
 cloud-init/           # Proxmox の vendor-data (VM 用)
 proxmox/              # PVE ホスト上で叩くスクリプト (LXC 用)
 ```

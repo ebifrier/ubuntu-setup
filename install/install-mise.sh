@@ -3,13 +3,13 @@
 # mise (旧 rtx) を入れて、Node.js / pnpm などのランタイムをまとめて管理する。
 # nvm + npm -g pnpm の代わり。入れるものは config/mise.toml で決まる。
 #
-#   ./install-mise.sh        # mise + config/mise.toml のツール一式
-#   ./install-mise.sh none   # mise 本体だけ (ツールは入れない)
+#   install/install-mise.sh        # mise + config/mise.toml のツール一式
+#   install/install-mise.sh none   # mise 本体だけ (ツールは入れない)
 #
 set -e
 
-SCRIPT_DIR=$(cd "$(dirname "$0")" && pwd)
-. "$SCRIPT_DIR/lib/common.sh"
+ROOT_DIR=$(cd "$(dirname "$0")/.." && pwd)
+. "$ROOT_DIR/lib/common.sh"
 
 MODE=${1:-all}
 MISE_BIN="$HOME/.local/bin/mise"
@@ -33,7 +33,7 @@ remove_legacy_bashrc_block nvm
 remove_legacy_bashrc_block pnpm
 
 mkdir -p "$MISE_CONFIG_DIR"
-cp -f "$SCRIPT_DIR/config/mise.toml" "$MISE_CONFIG_DIR/config.toml"
+cp -f "$ROOT_DIR/config/mise.toml" "$MISE_CONFIG_DIR/config.toml"
 
 "$MISE_BIN" --version
 
