@@ -1,6 +1,6 @@
 ---
 name: codex-review
-description: 実装の区切りやコミット・PR の前に、Codex CLI に変更をレビューさせたいとき（「codex でレビュー」「codex に検査させて」）に使う。引数で対象（--uncommitted / --base <branch> / --commit <sha>）と周回数（--rounds N、最大 3）を指定できる
+description: 実装の区切りやコミット・PR の前に、Codex CLI に変更をレビューさせたいとき（「codex でレビュー」「codex に検査させて」）に使う。引数で対象（--uncommitted / --base <branch> / --commit <sha>）と周回数（--rounds N、既定 3）を指定できる
 ---
 
 # Codex Review
@@ -20,7 +20,7 @@ Codex は読むだけ。修正・検証はこのセッションで行う（Codex
 
 既定ブランチは `git symbolic-ref --short refs/remotes/origin/HEAD`（`origin/` を除く）、取れなければ `main`。
 `--base` は merge-base と作業ツリーを比べる（`git diff <merge-base>`）ので、周回中の未コミットの修正も次の周で見られる。
-周回数の既定は 3 で、3 が上限。`--rounds` に 4 以上を渡されても 3 周で止める。
+周回数は `--rounds N` があれば N、無ければ 3。
 
 ## 2. レビューを走らせる
 
@@ -73,7 +73,7 @@ codex exec review <対象> --ephemeral -c sandbox_mode='"read-only"' -o "$OUT" >
 
 - 指摘が 0 件
 - 新しい指摘がすべて却下・保留（採用して直したものが無い）
-- 3 周（または `--rounds` で指定した周回数）に達した（最後の周で直したものは Codex が見ていない。報告でそう書く。4 周目は走らせず、もう 1 周するかも聞かない）
+- 周回数に達した（最後の周で直したものは Codex が見ていない。報告でそう書く。それ以上は走らせず、もう 1 周するかも聞かない）
 
 ## 6. 報告する
 
