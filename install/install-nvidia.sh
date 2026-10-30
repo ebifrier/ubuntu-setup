@@ -14,7 +14,7 @@
 # 版はスクリプトに焼かず、次の順で決める。
 #
 #   1. 引数
-#   2. 環境変数 NVIDIA_DRIVER_VERSION  (proxmox/create-lxc.sh が渡す)
+#   2. 環境変数 NVIDIA_DRIVER_VERSION
 #   3. /proc/driver/nvidia/version     (ホストのモジュールが見えている)
 #
 # GPU が渡っていない環境 (VM / GPU 無しマシン) では何もせずに終わるので、
