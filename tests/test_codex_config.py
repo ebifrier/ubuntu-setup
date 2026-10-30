@@ -37,9 +37,9 @@ class CodexConfigTests(unittest.TestCase):
         self.assertEqual(data["sandbox_workspace_write"]["writable_roots"], [
             str(self.home / ".local"), str(self.home / ".cache"),
         ])
-        self.assertEqual(data["mcp_servers"]["context7"]["command"], "npx")
+        self.assertEqual(data["mcp_servers"]["context7"]["command"], "pnpm")
         self.assertEqual(data["mcp_servers"]["context7"]["args"],
-                         ["-y", "@upstash/context7-mcp"])
+                         ["dlx", "@upstash/context7-mcp"])
         MODULE.configure(self.codex, self.home)
         self.assertEqual(self.config.read_bytes(), first)
         self.assertFalse((self.codex / "config.toml.bak").exists())
@@ -67,7 +67,7 @@ writable_roots = [
         self.assertEqual(data["model"], "custom-model")
         self.assertEqual(data["approvals_reviewer"], "auto_review")
         self.assertEqual(data["mcp_servers"]["example"]["command"], "example")
-        self.assertEqual(data["mcp_servers"]["context7"]["command"], "npx")
+        self.assertEqual(data["mcp_servers"]["context7"]["command"], "pnpm")
         self.assertEqual(data["mcp_servers"]["context7"]["env"]["CONTEXT7_API_KEY"], "secret")
         self.assertIn("# personal settings", updated)
         self.assertIn("# custom root", updated)

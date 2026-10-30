@@ -115,8 +115,8 @@ apt_install() {
 
 # ~/.bashrc の管理ブロックを冪等に書く。中身は標準入力から渡す。
 #
-#   ensure_bashrc_block mise <<'BLOCK'
-#   export PATH="$HOME/.local/share/mise/shims:$PATH"
+#   ensure_bashrc_block pnpm <<'BLOCK'
+#   export PNPM_HOME="$HOME/.local/share/pnpm"
 #   BLOCK
 #
 # マーカー行で囲むので、再実行しても重複せず、内容が変われば差し替わる。
@@ -227,7 +227,7 @@ remove_legacy_bashrc_block() {
     log "$BASHRC の旧 $_name ブロックを削除した。"
 }
 
-# ~/.local/bin を PATH に通す。claude / mise の両方が使う。
+# ~/.local/bin を PATH に通す。claude が使う。
 ensure_local_bin() {
     remove_legacy_bashrc_block claude
     ensure_bashrc_block local-bin <<'BLOCK'

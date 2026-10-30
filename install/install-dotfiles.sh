@@ -3,7 +3,7 @@
 # config/ の隠しファイル (.tmux.conf) を $HOME にそのまま配置する。
 #
 # config/ 直下のドットで始まるものは全部配るので、dotfile を足したいときは
-# config/ に置くだけでよい (mise.toml のような通常ファイルは対象外)。
+# config/ に置くだけでよい (通常ファイルは対象外)。
 #
 set -e
 

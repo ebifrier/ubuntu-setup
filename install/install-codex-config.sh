@@ -27,7 +27,7 @@ PATH="$USER_HOME/.local/bin:$PATH"
 export PATH
 require_cmd rtk
 
-# Ubuntu のシステム Python を使い、mise 等の Python との混在を避ける。
+# Ubuntu のシステム Python を使い、pyenv 等で入れた Python との混在を避ける。
 if ! /usr/bin/python3 -c 'import tomlkit' >/dev/null 2>&1; then
     apt_install python3 python3-tomlkit
 fi

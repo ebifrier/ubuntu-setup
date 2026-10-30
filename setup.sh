@@ -4,7 +4,7 @@
 #
 #   ./setup.sh                # 全部 (STEPS の順に実行)
 #   ./setup.sh docker         # 特定のステップだけ
-#   ./setup.sh docker mise    # 複数指定も可 (指定した順に実行)
+#   ./setup.sh docker pnpm    # 複数指定も可 (指定した順に実行)
 #   ./setup.sh -h             # ステップ一覧
 #
 set -e
@@ -24,7 +24,7 @@ gh:install-gh.sh:GitHub CLI (gh)
 awscli:install-awscli.sh:AWS CLI v2
 docker:install-docker.sh:Docker Engine
 nvidia:install-nvidia.sh:NVIDIA ドライバ (GPU 付き LXC のみ)
-mise:install-mise.sh:mise + Node.js / pnpm
+pnpm:install-pnpm.sh:pnpm + Node.js (LTS)
 claude:install-claude.sh:Claude Code
 rtk:install-rtk.sh:rtk (Claude Code / Codex のトークン削減プロキシ)
 codex:install-codex.sh:Codex CLI (OpenAI)

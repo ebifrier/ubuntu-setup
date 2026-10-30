@@ -66,9 +66,14 @@ cp -rf "$SRC/skills/." "$DEST/skills/"
 chmod +x "$DEST/scripts/"*.sh
 
 # context7 MCP は以前 joseki が持っていたので、ユーザースコープで登録する。
+# npm / npx は入れていない (install-pnpm.sh) ので pnpm dlx で起動する。
 if [ -n "$HAS_CLAUDE" ]; then
+    # mise で node を入れていた頃に npx で登録したものは pnpm dlx に差し替える。
+    if claude mcp get context7 2>/dev/null | grep -q '^ *Command: npx$'; then
+        claude mcp remove --scope user context7
+    fi
     claude mcp get context7 >/dev/null 2>&1 ||
-        claude mcp add --scope user context7 -- npx -y @upstash/context7-mcp
+        claude mcp add --scope user context7 -- pnpm dlx @upstash/context7-mcp
 else
     note "claude が無いので context7 MCP を登録していない。install-claude.sh のあとで claude-config をもう一度実行する。"
 fi

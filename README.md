@@ -4,9 +4,9 @@ The setup file for ubuntu.
 ## 使い方
 
 ```sh
-./setup.sh                # 全部 (wsl -> locale -> packages -> dotfiles -> git -> gh -> awscli -> docker -> nvidia -> mise -> claude -> rtk -> codex -> codex-config -> claude-config)
+./setup.sh                # 全部 (wsl -> locale -> packages -> dotfiles -> git -> gh -> awscli -> docker -> nvidia -> pnpm -> claude -> rtk -> codex -> codex-config -> claude-config)
 ./setup.sh docker         # 特定のステップだけ
-./setup.sh docker mise    # 複数指定も可 (指定した順に実行)
+./setup.sh docker pnpm    # 複数指定も可 (指定した順に実行)
 ./setup.sh -h             # ステップ一覧
 ```
 
@@ -108,7 +108,7 @@ apt で以下を入れる。
 
 `config/` のドットで始まるものは全部配るので、dotfile を足したいときは
 `config/` に置くだけでよい (スクリプトの修正は要らない)。
-`mise.toml` のような通常ファイルは対象外で、それぞれのスクリプトが配る。
+通常ファイルは対象外で、必要ならそれぞれのスクリプトが配る。
 
 上書きコピーなので `$HOME` の他のファイルは残る。
 
@@ -209,32 +209,35 @@ CUDA toolkit や PyTorch はプロジェクトごとに入れる前提で、こ�
 
 **ホストのドライバを更新したら、コンテナ側も `./setup.sh nvidia` を流し直すこと。**
 
-### install-mise.sh
+### install-pnpm.sh
 
-[mise](https://mise.jdx.dev/) を `~/.local/bin/mise` に入れて、Node.js / pnpm などの
-ランタイムをまとめて管理する。nvm + `npm -g pnpm` の置き換え。
-入れるものは `config/mise.toml` (配置先は `~/.config/mise/config.toml`) で決まる。
+[pnpm](https://pnpm.io/) を `~/.local/share/pnpm` (`PNPM_HOME`) に入れて、Node.js も
+pnpm に管理させる (`pnpm runtime`)。以前の mise / nvm の置き換え。
 
 ```sh
-install/install-mise.sh        # mise + config/mise.toml のツール一式
-install/install-mise.sh none   # mise 本体だけ (ツールは入れない)
+install/install-pnpm.sh        # pnpm + Node.js (LTS)
+install/install-pnpm.sh none   # pnpm 本体だけ (Node.js は入れない)
 ```
 
-```toml
-[tools]
-node = "lts"
-pnpm = "latest"
-```
+pnpm 本体は公式のスタンドアロン版 (Node.js 不要) で、グローバルの Node.js は
+`pnpm runtime set node lts -g` で入れる。流し直すとどちらも最新に上がる。
 
-Python や Go を足したくなったら `mise use -g python@3.12` を叩くか、
-上の `[tools]` に1行足して `./setup.sh mise` を流し直す。
+プロジェクトごとのバージョン固定は `package.json` に書く。
 
-`.bashrc` には shims (`~/.local/share/mise/shims`) への PATH を通す。
-shims にしておくと `ssh <host> <cmd>` や cron のような非対話シェルからも
+- pnpm — `packageManager` (`"pnpm@12.16.1"` など)。別のバージョンで叩いても pnpm が自動で切り替える
+- Node.js — `devEngines.runtime` (`{"name": "node", "version": "22.x", "onFail": "download"}`)。
+  `pnpm install` が取ってきてロックファイルに記録する
+
+`npm` / `npx` は入らない。`npx` の代わりに `pnpm dlx` (`pnpx`) を使う
+(context7 MCP もこれで起動している)。
+
+`.bashrc` には `$PNPM_HOME/bin` への PATH を通す (公式インストーラには書かせない)。
+`node` もここに入るので、`ssh <host> <cmd>` や cron のような非対話シェルからも
 `node` / `pnpm` が使える。
 
-nvm から乗り換えた場合、`~/.nvm` と nvm 公式インストーラが `.bashrc` に書いた
-`NVM_DIR` の行は自前で消す (このリポジトリが書いたブロックは自動で消える)。
+mise / nvm から乗り換えた場合、このリポジトリが `.bashrc` に書いたブロックは自動で消える。
+mise 本体と入れたツールは `mise implode --config`、nvm は `~/.nvm` と nvm 公式インストーラが
+`.bashrc` に書いた `NVM_DIR` の行を自前で消す。
 
 ### install-claude.sh
 
@@ -315,7 +318,7 @@ Ubuntu 24.04 以降は AppArmor が非特権の user namespace を制限して�
 - `approvals_reviewer = "auto_review"`: 対象の承認を自動レビューに回し、手動確認を減らす (Approve for me)
 - `sandbox_workspace_write.network_access = true`: 外部ネットワークへの接続を許可
 - `sandbox_workspace_write.writable_roots`: 対象ユーザーの `.local` と `.cache` を追加
-- `mcp_servers.context7`: context7 MCP を `npx -y @upstash/context7-mcp` で起動する
+- `mcp_servers.context7`: context7 MCP を `pnpm dlx @upstash/context7-mcp` で起動する
   (`env` など自分で足したキーは残す)
 
 既存のモデル・MCP・プラグイン設定やコメントは保持し、上記の管理対象キーだけを
@@ -385,14 +388,18 @@ ROOT_DIR=$(cd "$(dirname "$0")/.." && pwd)
 中身を標準入力で渡すと、マーカー行で囲んだブロックとして書き込む。
 
 ```sh
-# >>> ubuntu-setup: mise >>>
-export PATH="$HOME/.local/share/mise/shims:$PATH"
-# <<< ubuntu-setup: mise <<<
+# >>> ubuntu-setup: local-bin >>>
+case ":$PATH:" in
+    *":$HOME/.local/bin:"*) ;;
+    *) PATH="$HOME/.local/bin:$PATH" ;;
+esac
+export PATH
+# <<< ubuntu-setup: local-bin <<<
 ```
 
 - 何度流しても重複しない (中身が同じなら何もしないので、ブロックの順序も変わらない)
 - 中身を変えて流し直すと、そのブロックだけ差し替わる
-- `remove_bashrc_block <名前>` で消せる (mise が nvm / pnpm のブロックを片付けるのに使っている)
+- `remove_bashrc_block <名前>` で消せる (pnpm が mise / nvm のブロックを片付けるのに使っている)
 - マーカーが無かった頃の `# ubuntu-setup: <名前>` 形式は `remove_legacy_bashrc_block` が移行用に消す
 
 ### adduser.sh
@@ -420,7 +427,6 @@ install/install-*.sh  # ステップごとの本体
 lib/common.sh         # 共通処理 (メッセージ / apt / .bashrc)
 config/               # 配置するもの
   .tmux.conf                             # -> $HOME
-  mise.toml                              # -> ~/.config/mise/config.toml
 .claude/              # -> ~/.claude (このリポジトリ自身の設定も兼ねる)
   skills/                                # Claude 専用の skill (codex-review)
 agent-skills/         # Claude / Codex 共通の skill -> ~/.claude/skills, ~/.agents/skills

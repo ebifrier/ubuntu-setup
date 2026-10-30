@@ -40,8 +40,8 @@ def configure(codex_dir: Path, user_home: Path) -> None:
     if "context7" not in servers:
         servers["context7"] = tomlkit.table()
     context7 = servers["context7"]
-    context7["command"] = "npx"
-    context7["args"] = ["-y", "@upstash/context7-mcp"]
+    context7["command"] = "pnpm"
+    context7["args"] = ["dlx", "@upstash/context7-mcp"]
 
     updated = tomlkit.dumps(config)
     tomlkit.parse(updated)
