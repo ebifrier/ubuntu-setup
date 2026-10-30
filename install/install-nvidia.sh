@@ -117,8 +117,10 @@ install_container_toolkit() {
 # ---------------------------------------------------------------- GPU の有無
 
 # GPU が渡っていなければ黙って終わる。
-if [ ! -e /dev/nvidia0 ]; then
-    log "/dev/nvidia0 が無いので NVIDIA ドライバの導入は飛ばした。"
+# ホストにデバイスが無いまま LXC が起動すると、bind mount 先として空の通常ファイルが
+# 作られるので、存在ではなくキャラクタデバイスかどうかで見る。
+if [ ! -c /dev/nvidia0 ]; then
+    log "/dev/nvidia0 がデバイスとして見えないので NVIDIA ドライバの導入は飛ばした。"
     exit 0
 fi
 

@@ -197,8 +197,10 @@ install/install-nvidia.sh 580.82.07    # バージョン指定
 
 これで 4060 Ti のマシンと 5090 のマシンで同じスクリプトがそのまま通る。
 
-`/dev/nvidia0` が無ければ何もせずに終わるので、VM や GPU 無しのマシンでも
-`all` に入れっぱなしで害はない。
+`/dev/nvidia0` がキャラクタデバイスとして見えなければ何もせずに終わるので、
+VM や GPU 無しのマシンでも `all` に入れっぱなしで害はない。
+(ホストにデバイスが無いまま LXC が起動すると、`/dev/nvidia0` が空の通常ファイルとして
+作られることがあるので、存在だけでは判定しない。)
 
 `docker` が入っていれば続けて `nvidia-container-toolkit` も入れて
 `docker run --gpus all` を使えるようにする。このとき unprivileged な LXC では
