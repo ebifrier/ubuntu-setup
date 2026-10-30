@@ -104,15 +104,13 @@ apt で以下を入れる。
 
 ### install-dotfiles.sh
 
-`config/` 直下の隠しファイル (`.emacs` / `.emacs.d` / `.screenrc` / `.tmux.conf`) を
-`$HOME` にそのまま配置し、`bin/ec` を `/usr/local/bin` に入れる。
+`config/` 直下の隠しファイル (`.tmux.conf`) を `$HOME` にそのまま配置する。
 
 `config/` のドットで始まるものは全部配るので、dotfile を足したいときは
 `config/` に置くだけでよい (スクリプトの修正は要らない)。
 `mise.toml` のような通常ファイルは対象外で、それぞれのスクリプトが配る。
 
-※ `$HOME/.emacs.d` はスクリプト冒頭の `RECREATE` に入っていて毎回作り直すので、
-ローカルの変更は消える。それ以外は上書きコピーなので `$HOME` の他のファイルは残る。
+上書きコピーなので `$HOME` の他のファイルは残る。
 
 ### install-git.sh
 
@@ -420,9 +418,8 @@ export PATH="$HOME/.local/share/mise/shims:$PATH"
 setup.sh              # 入口。ステップの定義 (STEPS) もここ
 install/install-*.sh  # ステップごとの本体
 lib/common.sh         # 共通処理 (メッセージ / apt / .bashrc)
-bin/                  # $PATH に入れるスクリプト (ec)
 config/               # 配置するもの
-  .emacs .emacs.d .screenrc .tmux.conf   # -> $HOME
+  .tmux.conf                             # -> $HOME
   mise.toml                              # -> ~/.config/mise/config.toml
 .claude/              # -> ~/.claude (このリポジトリ自身の設定も兼ねる)
   skills/                                # Claude 専用の skill (codex-review)
